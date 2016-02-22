@@ -26,8 +26,21 @@ const std::vector<QFileInfo> &ImageLoader::getFiles() const
 
 void ImageLoader::next()
 {
-    IteratorHelper::circularIncrement(currentFile, files.begin(), files.end());
-    IteratorHelper::circularIncrement(currentPixmap, pixmaps.begin(), pixmaps.end());
+    IteratorHelper::circularIncrement(currentFile, files);
+
+    if (IteratorHelper::circularIncrement(currentPixmap, pixmaps))
+    {
+        QString path = currentFile->filePath();
+
+        pixmaps.emplace_back(AsyncPixmapLoader(path, size, this));
+        connect(&(pixmaps.back()),
+                SIGNAL(loadingFinished(AsyncPixmapLoader *)),
+                this,
+                SLOT(newPixmap(AsyncPixmapLoader*)));
+        pixmaps.back().load();
+        currentPixmap = std::prev(pixmaps.end());
+        reloadCurrent = true;
+    }
 
     if (currentPixmap->isLoaded())
     {
@@ -45,8 +58,21 @@ void ImageLoader::next()
 
 void ImageLoader::prev()
 {
-    IteratorHelper::circularDecrement(currentFile, files.begin(), files.end());
-    IteratorHelper::circularDecrement(currentPixmap, pixmaps.begin(), pixmaps.end());
+    IteratorHelper::circularDecrement(currentFile, files);
+
+    if (IteratorHelper::circularDecrement(currentPixmap, pixmaps))
+    {
+        QString path = currentFile->filePath();
+
+        pixmaps.emplace_front(AsyncPixmapLoader(path, size, this));
+        connect(&(pixmaps.front()),
+                SIGNAL(loadingFinished(AsyncPixmapLoader *)),
+                this,
+                SLOT(newPixmap(AsyncPixmapLoader*)));
+        pixmaps.front().load();
+        currentPixmap = pixmaps.begin();
+        reloadCurrent = true;
+    }
 
     if (currentPixmap->isLoaded())
     {
@@ -65,6 +91,8 @@ void ImageLoader::prev()
 void ImageLoader::setDir(QDir dir)
 {
     QDirIterator it(dir.absolutePath(), supportedExtensions, QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+
+    emit imageChanged(nullptr);
 
     files.clear();
     pixmaps.clear();
@@ -85,13 +113,28 @@ void ImageLoader::setDir(QDir dir)
 
 void ImageLoader::setSize(QSize size)
 {
+
+    if (this->size.width() > size.width())
+    {
+        this->size = size;
+        return;
+    }
+
     this->size = size;
 
-    emit imageChanged(nullptr);
+    if (pixmaps.empty())
+    {
+        return;
+    }
 
-    pixmaps.clear();
+    pixmaps.splice(pixmaps.begin(), pixmaps, currentPixmap);
+    pixmaps.erase(std::next(pixmaps.begin()), pixmaps.end());
     currentPixmap = pixmaps.begin();
-    reloadCurrent = false;
+
+    currentPixmap->joinThread();
+    currentPixmap->setSize(this->size);
+    reloadCurrent = true;
+
     loadNext();
     currentPixmap = pixmaps.begin();
 }
@@ -99,6 +142,7 @@ void ImageLoader::setSize(QSize size)
 void ImageLoader::loadCurrentFullSize()
 {
     reloadCurrent = !(currentPixmap->isFullSize());
+    currentPixmap->setSize(QSize(0, 0));
     loadNext();
 }
 
@@ -131,7 +175,6 @@ void ImageLoader::loadNext()
 
     if (reloadCurrent)
     {
-        currentPixmap->setSize(QSize(0, 0));
         currentPixmap->joinThread();
         currentPixmap->load();
         reloadCurrent = false;
@@ -140,7 +183,7 @@ void ImageLoader::loadNext()
 
     if (dist <= postCount + 1)
     {
-        QString path = IteratorHelper::circularNext(currentFile, files.begin(), files.end(), dist)->filePath();
+        QString path = IteratorHelper::circularNext(currentFile, files, dist)->filePath();
 
         pixmaps.emplace_back(AsyncPixmapLoader(path, size, this));
         connect(&(pixmaps.back()),
@@ -155,7 +198,7 @@ void ImageLoader::loadNext()
 
         if (dist <= prevCount)
         {
-            QString path = IteratorHelper::circularNext(currentFile, files.begin(), files.end(), -(dist + 1))->filePath();
+            QString path = IteratorHelper::circularNext(currentFile, files, -(dist + 1))->filePath();
 
             pixmaps.emplace_front(AsyncPixmapLoader(path, size, this));
             connect(&(pixmaps.front()),

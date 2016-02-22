@@ -15,6 +15,7 @@ class AsyncPixmapLoader : public QObject
     QPixmap pixmap;
     QSize maxSize;
     std::atomic_bool ready;
+    bool fullSize = false;
     std::thread thread;
 
 public:

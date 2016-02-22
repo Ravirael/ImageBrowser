@@ -20,6 +20,12 @@ bool circularIncrement(I &toIncrement, const I &begin, const I &end)
     return cycleComplete;
 }
 
+template <typename I, typename C>
+bool circularIncrement(I &toIncrement, C &cont)
+{
+    return circularIncrement(toIncrement, std::begin(cont), std::end(cont));
+}
+
 template <typename I>
 bool circularDecrement(I &toDecrement, const I &begin, const I &end)
 {
@@ -34,6 +40,12 @@ bool circularDecrement(I &toDecrement, const I &begin, const I &end)
     --toDecrement;
 
     return cycleComplete;
+}
+
+template <typename I, typename C>
+bool circularDecrement(I &toDecrement, C &cont)
+{
+    return circularDecrement(toDecrement, std::begin(cont), std::end(cont));
 }
 
 template <typename I>
@@ -88,12 +100,24 @@ void circularAdvance(I &toAdvance, const I &begin, const I &end, int step)
 
 }
 
+template <typename I, typename C>
+void circularAdvance(I &toIncrement, C &cont, int step)
+{
+    circularAdvance(toIncrement, std::begin(cont), std::end(cont), step);
+}
+
 template<typename I>
 I circularNext(const I &iter, const I &begin, const I &end, int step = 1)
 {
     I temp = iter;
     circularAdvance(temp, begin, end, step);
     return temp;
+}
+
+template <typename I, typename C>
+I circularNext(I &toIncrement, C &cont, int step)
+{
+    return circularNext(toIncrement, std::begin(cont), std::end(cont), step);
 }
 
 }

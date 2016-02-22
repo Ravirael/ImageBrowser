@@ -26,8 +26,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->listWidget->setWrapping(false);
     connect(&iconLoader, SIGNAL(iconLoaded(QIcon, QString)), this, SLOT(iconLoaded(QIcon, QString)));
     connect(painter, SIGNAL(sizeChanged(QSize)), &loader, SLOT(setSize(QSize)));
-    connect(painter, SIGNAL(zoomed()), &loader, SLOT(loadCurrentFullSize()));
+    //connect(painter, SIGNAL(sizeChanged(QSize)), painter, SLOT(calibrate()));
 
+    connect(painter, SIGNAL(zoomed()), &loader, SLOT(loadCurrentFullSize()));
 }
 
 MainWindow::~MainWindow()

@@ -33,10 +33,19 @@ bool ImagePainter::openFile(QString fileName)
 
 void ImagePainter::setPixmap(QPixmap *pixmap)
 {
+    static QSize prevSize;
     bool calib = true;
+
+    if (!pixmap)
+    {
+        update();
+        return;
+    }
 
     if (this->pixmap == pixmap)
     {
+        double scaleRatio = (double)prevSize.height()/pixmap->size().height();
+        scale *= scaleRatio;
         calib = false;
     }
 
@@ -48,6 +57,8 @@ void ImagePainter::setPixmap(QPixmap *pixmap)
     }
 
     update();
+
+    prevSize = this->pixmap->size();
 }
 
 /**
@@ -139,4 +150,6 @@ void ImagePainter::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
     emit sizeChanged(event->size());
+    calibrate();
+
 }

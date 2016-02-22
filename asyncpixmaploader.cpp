@@ -39,12 +39,14 @@ QPixmap *AsyncPixmapLoader::getPixmap()
 void AsyncPixmapLoader::joinThread()
 {
     if (thread.joinable())
+    {
         thread.join();
+    }
 }
 
 bool AsyncPixmapLoader::isFullSize()
 {
-    return maxSize.isNull();
+    return (isLoaded() && fullSize);
 }
 
 
@@ -54,20 +56,27 @@ void AsyncPixmapLoader::load()
     {
         QImageReader reader(path);
 
+        fullSize = true;
+
         if (!maxSize.isNull())
         {
             QSize size = reader.size();
+            qreal factor;
 
             if (size.width()/(qreal)maxSize.width() < size.height()/(qreal)maxSize.height())
             {
-                size *= maxSize.height()/(qreal)size.height();
+                factor = maxSize.height()/(qreal)size.height();
             }
             else
             {
-                size *= maxSize.width()/(qreal)size.width();
+                factor = maxSize.width()/(qreal)size.width();
             }
 
-            reader.setScaledSize(size);
+            if (factor < 1.0)
+            {
+                reader.setScaledSize(size*factor);
+                fullSize = false;
+            }
         }
 
         pixmap = QPixmap::fromImage(reader.read());
@@ -76,6 +85,7 @@ void AsyncPixmapLoader::load()
         emit pixmapReady(&pixmap);
     };
 
+    ready = false;
     thread = std::thread(loadOp);
 }
 
