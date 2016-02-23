@@ -13,6 +13,8 @@
 #include <QPixmap>
 
 #include "asyncpixmaploader.h"
+#include "loadingqueue.h"
+#include "pixmaploadedobserver.h"
 
 class ImageLoader : public QObject
 {
@@ -30,6 +32,9 @@ private:
     QPixmap pixmap;
     QSize size;
 
+    PixmapLoadedObserver observer;
+    LoadingQueue<AsyncPixmapLoader, PixmapLoadedObserver> loadingQueue;
+
 public:
     explicit ImageLoader(QObject *parent = 0);
     ~ImageLoader();
@@ -38,6 +43,7 @@ public:
 
 signals:
     void imageChanged(QPixmap *pixmap);
+    void itemChanged(int index);
 
 public slots:
     void next();
@@ -45,6 +51,9 @@ public slots:
     void setDir(QDir dir);
     void setSize(QSize size);
     void loadCurrentFullSize();
+    bool setFile(QFileInfo file);
+    void selectFile(int index);
+
 
 private slots:
     void newPixmap(AsyncPixmapLoader *pixmap);

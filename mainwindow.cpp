@@ -6,10 +6,13 @@
 #include <QDebug>
 #include <QIcon>
 
+#include "filelistwidgetitem.h"
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+
     ui->setupUi(this);
     painter = new ImagePainter;
     ui->scrollArea->setWidget(painter);
@@ -24,8 +27,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->listWidget->setResizeMode(QListWidget::Adjust);
     ui->listWidget->setFlow(QListWidget::LeftToRight);
     ui->listWidget->setWrapping(false);
-    connect(&iconLoader, SIGNAL(iconLoaded(QIcon, QString)), this, SLOT(iconLoaded(QIcon, QString)));
+
+    connect(ui->listWidget, SIGNAL(currentItemChanged(QListWidgetItem*,QListWidgetItem*)), this, SLOT(itemChanged(QListWidgetItem*,QListWidgetItem*)));
+
+    connect(&iconLoader, SIGNAL(iconLoaded(QIcon, QFileInfo*)), this, SLOT(iconLoaded(QIcon, QFileInfo*)));
     connect(painter, SIGNAL(sizeChanged(QSize)), &loader, SLOT(setSize(QSize)));
+    connect(&loader, SIGNAL(itemChanged(int)), this, SLOT(itemChanged(int)));
     //connect(painter, SIGNAL(sizeChanged(QSize)), painter, SLOT(calibrate()));
 
     connect(painter, SIGNAL(zoomed()), &loader, SLOT(loadCurrentFullSize()));
@@ -54,6 +61,8 @@ void MainWindow::on_actionOtw_rz_triggered()
 
     iconLoader.loadIconsAsync();
 
+    ui->listWidget->setCurrentRow(0);
+
 
 //    dir=info.dir();
   //  fileList = dir.entryList();
@@ -63,9 +72,47 @@ void MainWindow::on_actionOtw_rz_triggered()
     //window.showFullScreen();
 }
 
-void MainWindow::iconLoaded(QIcon icon, QString name)
+void MainWindow::iconLoaded(QIcon icon, QFileInfo *file)
 {
-    ui->listWidget->addItem(new QListWidgetItem(icon, name));
+    ui->listWidget->addItem(new FileListWidgetItem(icon, file));
     //ui->listWidget->repaint();
 }
 
+void MainWindow::itemChanged(QListWidgetItem *, QListWidgetItem *i)
+{
+    int row = ui->listWidget->currentRow();
+    //qDebug() << "Slot activated. Row: " << ui->listWidget->currentRow();
+
+    loader.selectFile(row);
+    //loader.setFile(*(static_cast<FileListWidgetItem *>(i)->getFileInfo()));
+}
+
+void MainWindow::itemChanged(int index)
+{
+    ui->listWidget->blockSignals(true);
+    ui->listWidget->setCurrentRow(index);
+    ui->listWidget->blockSignals(false);
+}
+
+
+void MainWindow::on_actionNext_triggered()
+{
+//    ui->listWidget->blockSignals(true);
+//    //ui->listWidget->setCurrentRow((ui->listWidget->currentRow()+1)%ui->listWidget->count());
+//    ui->listWidget->blockSignals(false);
+}
+
+
+void MainWindow::on_actionPrev_triggered()
+{
+//    ui->listWidget->blockSignals(true);
+//    int row = ui->listWidget->currentRow() - 1;
+//    if (row < 0)
+//    {
+//        row = ui->listWidget->count() - 1;
+//    }
+
+//    row %= ui->listWidget->count();
+//    //ui->listWidget->setCurrentRow(row);
+//    ui->listWidget->blockSignals(false);
+}

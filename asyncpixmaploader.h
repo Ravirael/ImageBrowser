@@ -26,6 +26,9 @@ public:
     QPixmap *getPixmap();
     void joinThread();
     bool isFullSize();
+    QSize getSize() const;
+
+    void operator()();
 
 signals:
     void pixmapReady(QPixmap *);

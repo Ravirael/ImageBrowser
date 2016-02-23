@@ -2,16 +2,25 @@
 #define FILELISTWIDGETITEM_H
 
 #include <QWidget>
+#include <QListWidgetItem>
+#include <QListWidget>
+#include <QIcon>
+#include <QFileInfo>
 
-class FileListWidgetItem : public QWidget
+class FileListWidgetItem : public QListWidgetItem
 {
-    Q_OBJECT
+    //Q_OBJECT
+
+    QFileInfo *file;
+
 public:
-    explicit FileListWidgetItem(QWidget *parent = 0);
+    explicit FileListWidgetItem(const QIcon &icon, QFileInfo *file, QListWidget *parent = 0);
 
-signals:
+    const QFileInfo *getFileInfo() const;
 
-public slots:
+//signals:
+
+//public slots:
 };
 
 #endif // FILELISTWIDGETITEM_H

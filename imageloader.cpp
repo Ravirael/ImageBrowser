@@ -8,7 +8,8 @@ ImageLoader::ImageLoader(QObject *parent) :
     QObject(parent),
     supportedExtensions{"*.jpg","*.jpeg","*.png","*.bmp"},
     prevCount(4),
-    postCount(8)
+    postCount(8),
+    loadingQueue(observer)
 {
     currentPixmap = pixmaps.begin();
     currentFile = files.begin();
@@ -26,23 +27,34 @@ const std::vector<QFileInfo> &ImageLoader::getFiles() const
 
 void ImageLoader::next()
 {
+    if (!currentPixmap->isLoaded())
+    {
+        reloadCurrent = true;
+
+        return;
+    }
+
     IteratorHelper::circularIncrement(currentFile, files);
+
+    emit itemChanged(std::distance(files.begin(), currentFile));
+
+    reloadCurrent = false;
 
     if (IteratorHelper::circularIncrement(currentPixmap, pixmaps))
     {
         QString path = currentFile->filePath();
+
+        loadingQueue.addToBegining(std::make_shared<AsyncPixmapLoader>(path, size, this));
 
         pixmaps.emplace_back(AsyncPixmapLoader(path, size, this));
         connect(&(pixmaps.back()),
                 SIGNAL(loadingFinished(AsyncPixmapLoader *)),
                 this,
                 SLOT(newPixmap(AsyncPixmapLoader*)));
-        pixmaps.back().load();
         currentPixmap = std::prev(pixmaps.end());
         reloadCurrent = true;
     }
-
-    if (currentPixmap->isLoaded())
+    else if (currentPixmap->isLoaded())
     {
         emit imageChanged(currentPixmap->getPixmap());
     }
@@ -52,29 +64,38 @@ void ImageLoader::next()
         pixmaps.pop_front();
     }
 
-    reloadCurrent = false;
     loadNext();
 }
 
 void ImageLoader::prev()
 {
+    if (!currentPixmap->isLoaded())
+    {
+        reloadCurrent = true;
+        return;
+    }
+
     IteratorHelper::circularDecrement(currentFile, files);
+
+    emit itemChanged(std::distance(files.begin(), currentFile));
+
+    reloadCurrent = false;
 
     if (IteratorHelper::circularDecrement(currentPixmap, pixmaps))
     {
         QString path = currentFile->filePath();
 
         pixmaps.emplace_front(AsyncPixmapLoader(path, size, this));
+
         connect(&(pixmaps.front()),
                 SIGNAL(loadingFinished(AsyncPixmapLoader *)),
                 this,
                 SLOT(newPixmap(AsyncPixmapLoader*)));
-        pixmaps.front().load();
+
         currentPixmap = pixmaps.begin();
         reloadCurrent = true;
     }
-
-    if (currentPixmap->isLoaded())
+    else if (currentPixmap->isLoaded())
     {
         emit imageChanged(currentPixmap->getPixmap());
     }
@@ -84,15 +105,17 @@ void ImageLoader::prev()
         pixmaps.pop_back();
     }
 
-    reloadCurrent = false;
     loadNext();
 }
 
 void ImageLoader::setDir(QDir dir)
 {
+    dir.setSorting(QDir::Name);
+
     QDirIterator it(dir.absolutePath(), supportedExtensions, QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
 
     emit imageChanged(nullptr);
+
 
     files.clear();
     pixmaps.clear();
@@ -102,6 +125,13 @@ void ImageLoader::setDir(QDir dir)
         files.push_back(it.fileInfo());
     }
 
+    /*std::sort(files.begin(), files.end(),
+              [](const QFileInfo &file1, const QFileInfo &file2) -> bool
+    {
+        return (file1.baseName() < file2.baseName());
+    });*/
+
+
     currentPixmap = pixmaps.begin();
     currentFile = files.begin();
 
@@ -109,20 +139,40 @@ void ImageLoader::setDir(QDir dir)
 
     currentPixmap = pixmaps.begin();
 
+    emit itemChanged(0);
+
+}
+
+bool ImageLoader::setFile(QFileInfo file)
+{
+    currentFile = std::find(files.begin(), files.end(), file);
+
+    emit imageChanged(nullptr);
+    pixmaps.clear();
+    currentPixmap = pixmaps.begin();
+    loadNext();
+    currentPixmap = pixmaps.begin();
+}
+
+void ImageLoader::selectFile(int index)
+{
+    currentFile = std::next(files.begin(), index);
+
+    emit imageChanged(nullptr);
+    pixmaps.clear();
+    currentPixmap = pixmaps.begin();
+    loadNext();
+    currentPixmap = pixmaps.begin();
 }
 
 void ImageLoader::setSize(QSize size)
 {
-
-    if (this->size.width() > size.width())
-    {
-        this->size = size;
-        return;
-    }
+    auto oldWidth = this->size.width();
 
     this->size = size;
 
-    if (pixmaps.empty())
+    if ((oldWidth > size.width()) ||
+        pixmaps.empty())
     {
         return;
     }
@@ -131,12 +181,17 @@ void ImageLoader::setSize(QSize size)
     pixmaps.erase(std::next(pixmaps.begin()), pixmaps.end());
     currentPixmap = pixmaps.begin();
 
-    currentPixmap->joinThread();
-    currentPixmap->setSize(this->size);
-    reloadCurrent = true;
+    if (!currentPixmap->isFullSize() ||
+         (this->size.width() > currentPixmap->getSize().width()))
+    {
+        currentPixmap->joinThread();
+        currentPixmap->setSize(this->size);
+        reloadCurrent = true;
+    }
 
     loadNext();
     currentPixmap = pixmaps.begin();
+
 }
 
 void ImageLoader::loadCurrentFullSize()

@@ -12,6 +12,8 @@
 #include "imageloader.h"
 #include "iconloader.h"
 
+class QListWidgetItem;
+
 namespace Ui {
 class MainWindow;
 }
@@ -26,8 +28,13 @@ public:
 
 private slots:
     void on_actionOtw_rz_triggered();
-    void iconLoaded(QIcon icon, QString name);
+    void iconLoaded(QIcon icon, QFileInfo *file);
+    void itemChanged(QListWidgetItem *, QListWidgetItem *);
+    void itemChanged(int index);
 
+    void on_actionNext_triggered();
+
+    void on_actionPrev_triggered();
 
 private:
     ImageLoader loader;

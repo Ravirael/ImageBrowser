@@ -18,7 +18,7 @@ void IconLoader::loadIcons()
         reader.setScaledSize(size);
 
         QPixmap pixmap = QPixmap::fromImageReader(&reader);
-        emit iconLoaded(QIcon(pixmap), currentFile->fileName());
+        emit iconLoaded(QIcon(pixmap), &(*currentFile));
     }
 }
 

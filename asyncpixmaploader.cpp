@@ -49,44 +49,50 @@ bool AsyncPixmapLoader::isFullSize()
     return (isLoaded() && fullSize);
 }
 
+QSize AsyncPixmapLoader::getSize() const
+{
+    return maxSize;
+}
+
+void AsyncPixmapLoader::operator()()
+{
+    QImageReader reader(path);
+
+    fullSize = true;
+
+    if (!maxSize.isNull())
+    {
+        QSize size = reader.size();
+        qreal factor;
+
+        if (size.width()/(qreal)maxSize.width() < size.height()/(qreal)maxSize.height())
+        {
+            factor = maxSize.height()/(qreal)size.height();
+        }
+        else
+        {
+            factor = maxSize.width()/(qreal)size.width();
+        }
+
+        if (factor < 1.0)
+        {
+            reader.setScaledSize(size*factor);
+            fullSize = false;
+        }
+    }
+
+    pixmap = QPixmap::fromImage(reader.read());
+    ready = true;
+    emit loadingFinished(this);
+    emit pixmapReady(&pixmap);
+
+}
+
 
 void AsyncPixmapLoader::load()
 {
-    auto loadOp = [&]
-    {
-        QImageReader reader(path);
-
-        fullSize = true;
-
-        if (!maxSize.isNull())
-        {
-            QSize size = reader.size();
-            qreal factor;
-
-            if (size.width()/(qreal)maxSize.width() < size.height()/(qreal)maxSize.height())
-            {
-                factor = maxSize.height()/(qreal)size.height();
-            }
-            else
-            {
-                factor = maxSize.width()/(qreal)size.width();
-            }
-
-            if (factor < 1.0)
-            {
-                reader.setScaledSize(size*factor);
-                fullSize = false;
-            }
-        }
-
-        pixmap = QPixmap::fromImage(reader.read());
-        ready = true;
-        emit loadingFinished(this);
-        emit pixmapReady(&pixmap);
-    };
-
     ready = false;
-    thread = std::thread(loadOp);
+    thread = std::thread([this]{this->operator()();});
 }
 
 void AsyncPixmapLoader::setSize(const QSize &size)

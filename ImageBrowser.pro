@@ -18,8 +18,9 @@ SOURCES += main.cpp\
     imagepainter.cpp \
     imageloader.cpp \
     asyncpixmaploader.cpp \
-    loadingqueue.cpp \
-    iconloader.cpp
+    iconloader.cpp \
+    filelistwidgetitem.cpp \
+    pixmaploadedobserver.cpp
 
 HEADERS  += mainwindow.h \
     imagepainter.h \
@@ -27,6 +28,8 @@ HEADERS  += mainwindow.h \
     iteratorhelper.h \
     asyncpixmaploader.h \
     loadingqueue.h \
-    iconloader.h
+    iconloader.h \
+    filelistwidgetitem.h \
+    pixmaploadedobserver.h
 
 FORMS    += mainwindow.ui

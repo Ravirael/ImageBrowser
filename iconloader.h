@@ -10,7 +10,6 @@
 #include <atomic>
 #include <vector>
 
-
 class IconLoader : public QObject
 {
     Q_OBJECT
@@ -29,7 +28,7 @@ public:
     void setFiles(const std::vector<QFileInfo> &files);
 
 signals:
-    void iconLoaded(QIcon icon, QString name);
+    void iconLoaded(QIcon icon, QFileInfo *file);
 
 public slots:
     void loadIconsAsync();
