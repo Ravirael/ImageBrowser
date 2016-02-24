@@ -49,7 +49,7 @@ bool circularDecrement(I &toDecrement, C &cont)
 }
 
 template <typename I>
-void circularAdvance(I &toAdvance, const I &begin, const I &end, int step)
+void circularAdvance(I &toAdvance, const I &begin, const I &end, int step = 1)
 {
     /*int size = std::distance(begin, end);
 
@@ -101,7 +101,7 @@ void circularAdvance(I &toAdvance, const I &begin, const I &end, int step)
 }
 
 template <typename I, typename C>
-void circularAdvance(I &toIncrement, C &cont, int step)
+void circularAdvance(I &toIncrement, C &cont, int step = 1)
 {
     circularAdvance(toIncrement, std::begin(cont), std::end(cont), step);
 }
@@ -115,7 +115,7 @@ I circularNext(const I &iter, const I &begin, const I &end, int step = 1)
 }
 
 template <typename I, typename C>
-I circularNext(I &toIncrement, C &cont, int step)
+I circularNext(I &toIncrement, C &cont, int step = 1)
 {
     return circularNext(toIncrement, std::begin(cont), std::end(cont), step);
 }

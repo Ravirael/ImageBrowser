@@ -17,7 +17,7 @@ MainWindow::MainWindow(QWidget *parent) :
     painter = new ImagePainter;
     ui->scrollArea->setWidget(painter);
 
-    connect(&loader, SIGNAL(imageChanged(QPixmap*)), painter, SLOT(setPixmap(QPixmap*)));
+    connect(&loader, SIGNAL(imageChanged(std::shared_ptr<QPixmap>, bool)), painter, SLOT(setPixmap(std::shared_ptr<QPixmap>, bool)));
 
     connect(ui->actionNext, SIGNAL(triggered(bool)), &loader, SLOT(next()));
     connect(ui->actionPrev, SIGNAL(triggered(bool)), &loader, SLOT(prev()));
@@ -57,11 +57,14 @@ void MainWindow::on_actionOtw_rz_triggered()
 
     iconLoader.setFiles(loader.getFiles());
 
+    ui->listWidget->blockSignals(true);
     ui->listWidget->clear();
 
     iconLoader.loadIconsAsync();
 
     ui->listWidget->setCurrentRow(0);
+    ui->listWidget->blockSignals(false);
+
 
 
 //    dir=info.dir();

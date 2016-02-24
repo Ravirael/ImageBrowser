@@ -3,17 +3,17 @@
 #include <QImageReader>
 #include <chrono>
 
-AsyncPixmapLoader::AsyncPixmapLoader(QString path, QSize maxSize, QObject *parent) :
-    QObject(parent), ready(false), maxSize(maxSize), path(path)
+AsyncPixmapLoader::AsyncPixmapLoader(QString path, QSize maxSize, QObject *parent, bool reloaded) :
+    QObject(parent), ready(false), maxSize(maxSize), path(path), reloaded(reloaded)
 {
-
+    pixmap = std::make_shared<QPixmap>();
 }
 
 AsyncPixmapLoader::AsyncPixmapLoader(const AsyncPixmapLoader &loader) :
-    QObject(loader.parent()), ready(false), maxSize(loader.maxSize), path(loader.path)
+    QObject(loader.parent()), ready(false), maxSize(loader.maxSize), path(loader.path), reloaded(loader.reloaded)
 
 {
-
+    pixmap = loader.pixmap;
 }
 
 AsyncPixmapLoader::~AsyncPixmapLoader()
@@ -26,11 +26,11 @@ bool AsyncPixmapLoader::isLoaded() const
     return ready;
 }
 
-QPixmap *AsyncPixmapLoader::getPixmap()
+std::shared_ptr<QPixmap> AsyncPixmapLoader::getPixmap()
 {
     if (ready)
     {
-        return &pixmap;
+        return pixmap;
     }
 
     return nullptr;
@@ -44,7 +44,12 @@ void AsyncPixmapLoader::joinThread()
     }
 }
 
-bool AsyncPixmapLoader::isFullSize()
+bool AsyncPixmapLoader::isReloaded() const
+{
+    return reloaded;
+}
+
+bool AsyncPixmapLoader::isFullSize() const
 {
     return (isLoaded() && fullSize);
 }
@@ -81,10 +86,10 @@ void AsyncPixmapLoader::operator()()
         }
     }
 
-    pixmap = QPixmap::fromImage(reader.read());
+    *pixmap = QPixmap::fromImage(reader.read());
     ready = true;
     emit loadingFinished(this);
-    emit pixmapReady(&pixmap);
+    emit pixmapReady(pixmap);
 
 }
 

@@ -5,24 +5,25 @@
 #include <QMouseEvent>
 #include <QWidget>
 
+#include <memory>
+
 class ImagePainter : public QWidget
 {
     Q_OBJECT
 public:
     explicit ImagePainter(QWidget *parent = 0);
-    bool openFile(QString fileName);
 
 signals:
     void sizeChanged(QSize);
     void zoomed();
 
 public slots:
-    void setPixmap(QPixmap *);
+    void setPixmap(std::shared_ptr<QPixmap>, bool reload);
     void reset();
     void calibrate();
 
 private:
-    QPixmap *pixmap;
+    std::shared_ptr<QPixmap> pixmap;
     double scale;
     QPoint positionOrigin, position, mouseOrigin;
 

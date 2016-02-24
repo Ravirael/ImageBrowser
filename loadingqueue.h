@@ -13,16 +13,14 @@ template <typename T, typename O>
 class LoadingQueue
 {
     std::list<std::shared_ptr<T>> tasksList;
-    std::vector<std::shared_ptr<T>> toRemove;
     std::mutex tasksLock;
-    std::atomic_bool clearTasks;
-    std::atomic_bool stop;
 
     O &observer;
+    std::atomic_bool stop;
+
 
 public:
     explicit LoadingQueue(O &observer):observer(observer),
-                                       clearTasks(false),
                                        stop(false)
     {
 
@@ -41,12 +39,17 @@ public:
 
     void remove(const std::shared_ptr<T> &elem)
     {
-        withLock([&]{toRemove.push_back(elem);});
+        withLock([&]{tasksList.remove(elem);});
     }
 
     void clear()
     {
-        clearTasks = true;
+        withLock([&]{tasksList.clear();});
+    }
+
+    void stopTasks()
+    {
+        stop = true;
     }
 
     void performTasks()
@@ -58,7 +61,7 @@ public:
         {
             withLock([&]
             {
-                if (tasksList.empty())
+                if (!tasksList.empty())
                 {
                     current = tasksList.back();
                     tasksList.pop_back();
@@ -79,22 +82,6 @@ public:
                 std::this_thread::yield();
             }
 
-            withLock([&]
-            {
-                if (clearTasks)
-                {
-                    clearTasks = false;
-                    toRemove.clear();
-                    tasksList.clear();
-                }
-
-                for (const auto &elem : toRemove)
-                {
-                    tasksList.remove(std::find(tasksList.begin, tasksList.end(), elem));
-                }
-
-                toRemove.clear();
-            });
         }
     }
 

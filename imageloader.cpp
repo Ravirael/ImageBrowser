@@ -13,11 +13,17 @@ ImageLoader::ImageLoader(QObject *parent) :
 {
     currentPixmap = pixmaps.begin();
     currentFile = files.begin();
+
+    qRegisterMetaType<std::shared_ptr<AsyncPixmapLoader>>("std::shared_ptr<AsyncPixmapLoader>");
+    connect(&observer, SIGNAL(loadingFinished(std::shared_ptr<AsyncPixmapLoader>)), this, SLOT(newPixmap(std::shared_ptr<AsyncPixmapLoader>)));
+
+    loadingThread = std::thread([&]{loadingQueue.performTasks();});
 }
 
 ImageLoader::~ImageLoader()
 {
-
+    loadingQueue.stopTasks();
+    loadingThread.join();
 }
 
 const std::vector<QFileInfo> &ImageLoader::getFiles() const
@@ -27,85 +33,42 @@ const std::vector<QFileInfo> &ImageLoader::getFiles() const
 
 void ImageLoader::next()
 {
-    if (!currentPixmap->isLoaded())
-    {
-        reloadCurrent = true;
-
-        return;
-    }
-
     IteratorHelper::circularIncrement(currentFile, files);
 
     emit itemChanged(std::distance(files.begin(), currentFile));
 
-    reloadCurrent = false;
+    IteratorHelper::circularIncrement(currentPixmap, pixmaps);
 
-    if (IteratorHelper::circularIncrement(currentPixmap, pixmaps))
+    if ((*currentPixmap)->isLoaded())
     {
-        QString path = currentFile->filePath();
-
-        loadingQueue.addToBegining(std::make_shared<AsyncPixmapLoader>(path, size, this));
-
-        pixmaps.emplace_back(AsyncPixmapLoader(path, size, this));
-        connect(&(pixmaps.back()),
-                SIGNAL(loadingFinished(AsyncPixmapLoader *)),
-                this,
-                SLOT(newPixmap(AsyncPixmapLoader*)));
-        currentPixmap = std::prev(pixmaps.end());
-        reloadCurrent = true;
-    }
-    else if (currentPixmap->isLoaded())
-    {
-        emit imageChanged(currentPixmap->getPixmap());
+        emit imageChanged((*currentPixmap)->getPixmap(), false);
     }
 
-    if (std::distance(pixmaps.begin(), currentPixmap) >= prevCount)
-    {
-        pixmaps.pop_front();
-    }
+    QString path = IteratorHelper::circularNext(currentFile, files, postCount)->filePath();
 
-    loadNext();
+    pixmaps.pop_front();
+    pixmaps.emplace_back(std::make_shared<AsyncPixmapLoader>(path, size, this));
+    updateQueue();
 }
 
 void ImageLoader::prev()
 {
-    if (!currentPixmap->isLoaded())
-    {
-        reloadCurrent = true;
-        return;
-    }
-
     IteratorHelper::circularDecrement(currentFile, files);
 
     emit itemChanged(std::distance(files.begin(), currentFile));
 
-    reloadCurrent = false;
+    IteratorHelper::circularDecrement(currentPixmap, pixmaps);
 
-    if (IteratorHelper::circularDecrement(currentPixmap, pixmaps))
+    if ((*currentPixmap)->isLoaded())
     {
-        QString path = currentFile->filePath();
-
-        pixmaps.emplace_front(AsyncPixmapLoader(path, size, this));
-
-        connect(&(pixmaps.front()),
-                SIGNAL(loadingFinished(AsyncPixmapLoader *)),
-                this,
-                SLOT(newPixmap(AsyncPixmapLoader*)));
-
-        currentPixmap = pixmaps.begin();
-        reloadCurrent = true;
-    }
-    else if (currentPixmap->isLoaded())
-    {
-        emit imageChanged(currentPixmap->getPixmap());
+        emit imageChanged((*currentPixmap)->getPixmap(), false);
     }
 
-    if (std::distance(currentPixmap, pixmaps.end()) > postCount)
-    {
-        pixmaps.pop_back();
-    }
+    QString path = IteratorHelper::circularNext(currentFile, files, -prevCount)->filePath();
 
-    loadNext();
+    pixmaps.pop_back();
+    pixmaps.emplace_front(std::make_shared<AsyncPixmapLoader>(path, size, this));
+    updateQueue();
 }
 
 void ImageLoader::setDir(QDir dir)
@@ -114,55 +77,27 @@ void ImageLoader::setDir(QDir dir)
 
     QDirIterator it(dir.absolutePath(), supportedExtensions, QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
 
-    emit imageChanged(nullptr);
-
-
     files.clear();
-    pixmaps.clear();
 
     for (it.next(); it.hasNext(); it.next())
     {
         files.push_back(it.fileInfo());
     }
 
-    /*std::sort(files.begin(), files.end(),
-              [](const QFileInfo &file1, const QFileInfo &file2) -> bool
-    {
-        return (file1.baseName() < file2.baseName());
-    });*/
-
-
-    currentPixmap = pixmaps.begin();
     currentFile = files.begin();
 
-    loadNext();
+    fillQueue();
 
-    currentPixmap = pixmaps.begin();
 
     emit itemChanged(0);
 
 }
 
-bool ImageLoader::setFile(QFileInfo file)
-{
-    currentFile = std::find(files.begin(), files.end(), file);
-
-    emit imageChanged(nullptr);
-    pixmaps.clear();
-    currentPixmap = pixmaps.begin();
-    loadNext();
-    currentPixmap = pixmaps.begin();
-}
 
 void ImageLoader::selectFile(int index)
 {
     currentFile = std::next(files.begin(), index);
-
-    emit imageChanged(nullptr);
-    pixmaps.clear();
-    currentPixmap = pixmaps.begin();
-    loadNext();
-    currentPixmap = pixmaps.begin();
+    fillQueue();
 }
 
 void ImageLoader::setSize(QSize size)
@@ -177,98 +112,81 @@ void ImageLoader::setSize(QSize size)
         return;
     }
 
-    pixmaps.splice(pixmaps.begin(), pixmaps, currentPixmap);
-    pixmaps.erase(std::next(pixmaps.begin()), pixmaps.end());
-    currentPixmap = pixmaps.begin();
-
-    if (!currentPixmap->isFullSize() ||
-         (this->size.width() > currentPixmap->getSize().width()))
-    {
-        currentPixmap->joinThread();
-        currentPixmap->setSize(this->size);
-        reloadCurrent = true;
-    }
-
-    loadNext();
-    currentPixmap = pixmaps.begin();
-
+    fillQueue();
 }
 
 void ImageLoader::loadCurrentFullSize()
 {
-    reloadCurrent = !(currentPixmap->isFullSize());
-    currentPixmap->setSize(QSize(0, 0));
-    loadNext();
+    if ((*currentPixmap)->isFullSize())
+    {
+        return;
+    }
+
+    auto inserted = pixmaps.insert(currentPixmap,
+                                   std::make_shared<AsyncPixmapLoader>(currentFile->filePath(), QSize(0, 0), this, true));
+    pixmaps.remove(*currentPixmap);
+    currentPixmap = inserted;
+
+    loadingQueue.addToBegining(*currentPixmap);
 }
 
-void ImageLoader::newPixmap(AsyncPixmapLoader *loader)
+void ImageLoader::newPixmap(std::shared_ptr<AsyncPixmapLoader> loader)
 {
-    if (loader == &(*currentPixmap))
+    if (loader == *currentPixmap)
     {
-        emit imageChanged(currentPixmap->getPixmap());
+        emit imageChanged((*currentPixmap)->getPixmap(), (*currentPixmap)->isReloaded());
     }
-
-    loadNext();
 }
 
-void ImageLoader::loadNext()
+void ImageLoader::fillQueue()
 {
-    auto dist = std::distance(currentPixmap, pixmaps.end());
+    auto iter = IteratorHelper::circularNext(currentFile, files);
 
-    if (files.empty())
+    pixmaps.clear();
+    loadingQueue.clear();
+
+    pixmaps.emplace_back(std::make_shared<AsyncPixmapLoader>(currentFile->filePath(), size, this));
+    loadingQueue.addToBegining(pixmaps.back());
+
+    currentPixmap = pixmaps.begin();
+
+    for (unsigned i = 0; i < postCount; ++i)
     {
-        return;
+        QString path = iter->filePath();
+        IteratorHelper::circularIncrement(iter, files);
+        pixmaps.emplace_back(std::make_shared<AsyncPixmapLoader>(path, size, this));
+        loadingQueue.addToEnd(pixmaps.back());
     }
 
-    if ( !(pixmaps.empty()) &&
-         (!(pixmaps.back().isLoaded()) ||
-         !(pixmaps.front().isLoaded()) ||
-          !(currentPixmap->isLoaded()) ))
+    iter = IteratorHelper::circularNext(currentFile, files, -1);
+
+    for (unsigned i = 0; i < prevCount; ++i)
     {
-        return;
+        QString path = iter->filePath();
+        IteratorHelper::circularDecrement(iter, files);
+        pixmaps.emplace_front(std::make_shared<AsyncPixmapLoader>(path, size, this));
+        loadingQueue.addToEnd(pixmaps.front());
     }
+}
 
-    if (reloadCurrent)
+void ImageLoader::updateQueue()
+{
+    loadingQueue.clear();
+
+    for(auto iter = currentPixmap; iter != pixmaps.end(); ++iter)
     {
-        currentPixmap->joinThread();
-        currentPixmap->load();
-        reloadCurrent = false;
-        return;
-    }
-
-    if (dist <= postCount + 1)
-    {
-        QString path = IteratorHelper::circularNext(currentFile, files, dist)->filePath();
-
-        pixmaps.emplace_back(AsyncPixmapLoader(path, size, this));
-        connect(&(pixmaps.back()),
-                SIGNAL(loadingFinished(AsyncPixmapLoader *)),
-                this,
-                SLOT(newPixmap(AsyncPixmapLoader*)));
-        pixmaps.back().load();
-    }
-    else
-    {
-        dist = std::distance(pixmaps.begin(), currentPixmap);
-
-        if (dist <= prevCount)
+        if (!(*iter)->isLoaded())
         {
-            QString path = IteratorHelper::circularNext(currentFile, files, -(dist + 1))->filePath();
-
-            pixmaps.emplace_front(AsyncPixmapLoader(path, size, this));
-            connect(&(pixmaps.front()),
-                    SIGNAL(loadingFinished(AsyncPixmapLoader *)),
-                    this,
-                    SLOT(newPixmap(AsyncPixmapLoader*)));
-            pixmaps.front().load();
+            loadingQueue.addToEnd(*iter);
         }
     }
-}
 
-QPixmap ImageLoader::load(QString path)
-{
-    QPixmap pixmap;
-    pixmap.load(path);
-    return pixmap;
+    for(auto iter = pixmaps.begin(); iter != pixmaps.end(); ++iter)
+    {
+        if (!(*iter)->isLoaded())
+        {
+            loadingQueue.addToEnd(*iter);
+        }
+    }
 }
 

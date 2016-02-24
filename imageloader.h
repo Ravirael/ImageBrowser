@@ -12,6 +12,8 @@
 #include <QFileInfo>
 #include <QPixmap>
 
+#include <thread>
+
 #include "asyncpixmaploader.h"
 #include "loadingqueue.h"
 #include "pixmaploadedobserver.h"
@@ -27,13 +29,14 @@ private:
     unsigned prevCount, postCount;
 
     bool reloadCurrent = false;
-    std::list<AsyncPixmapLoader> pixmaps;
+    std::list<std::shared_ptr<AsyncPixmapLoader>> pixmaps;
     decltype(pixmaps.begin()) currentPixmap;
     QPixmap pixmap;
     QSize size;
 
     PixmapLoadedObserver observer;
     LoadingQueue<AsyncPixmapLoader, PixmapLoadedObserver> loadingQueue;
+    std::thread loadingThread;
 
 public:
     explicit ImageLoader(QObject *parent = 0);
@@ -42,7 +45,7 @@ public:
     const std::vector<QFileInfo> &getFiles() const;
 
 signals:
-    void imageChanged(QPixmap *pixmap);
+    void imageChanged(std::shared_ptr<QPixmap> pixmap, bool);
     void itemChanged(int index);
 
 public slots:
@@ -51,13 +54,13 @@ public slots:
     void setDir(QDir dir);
     void setSize(QSize size);
     void loadCurrentFullSize();
-    bool setFile(QFileInfo file);
     void selectFile(int index);
 
 
 private slots:
-    void newPixmap(AsyncPixmapLoader *pixmap);
-    void loadNext();
+    void newPixmap(std::shared_ptr<AsyncPixmapLoader> pixmap);
+    void fillQueue();
+    void updateQueue();
 
 private:
     static QPixmap load(QString path);

@@ -8,41 +8,19 @@ ImagePainter::ImagePainter(QWidget *parent) :
 {
 }
 
-/**
- * @deprecated Just for tests purpose
- * @brief ImagePainter::openFile load to static QPixmap and sets it as active
- * @param fileName path to image file to open.
- * @return if opening has suceeded.
- */
-bool ImagePainter::openFile(QString fileName)
-{
-    static QPixmap pixmap;
-
-    pixmap.load(fileName);
-    if (pixmap.isNull()) {
-        QMessageBox::information(this, QGuiApplication::applicationDisplayName(),
-                                 tr("Cannot load %1.").arg(QDir::toNativeSeparators(fileName)));
-        return false;
-    }
-
-    reset();
-    setPixmap(&pixmap);
-
-    return true;
-}
-
-void ImagePainter::setPixmap(QPixmap *pixmap)
+void ImagePainter::setPixmap(std::shared_ptr<QPixmap> pixmap, bool reload)
 {
     static QSize prevSize;
     bool calib = true;
 
     if (!pixmap)
     {
+        this->pixmap = pixmap;
         update();
         return;
     }
 
-    if (this->pixmap == pixmap)
+    if (reload)
     {
         double scaleRatio = (double)prevSize.height()/pixmap->size().height();
         scale *= scaleRatio;
