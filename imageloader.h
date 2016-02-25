@@ -52,6 +52,7 @@ public slots:
     void next();
     void prev();
     void setDir(QDir dir);
+    void setFiles(std::vector<QFileInfo> files);
     void setSize(QSize size);
     void loadCurrentFullSize();
     void selectFile(int index);

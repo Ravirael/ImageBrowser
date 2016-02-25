@@ -16,42 +16,7 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QScrollArea" name="scrollArea">
-      <property name="contextMenuPolicy">
-       <enum>Qt::DefaultContextMenu</enum>
-      </property>
-      <property name="frameShape">
-       <enum>QFrame::NoFrame</enum>
-      </property>
-      <property name="lineWidth">
-       <number>0</number>
-      </property>
-      <property name="midLineWidth">
-       <number>-1</number>
-      </property>
-      <property name="verticalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
-      <property name="horizontalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
-      <property name="widgetResizable">
-       <bool>true</bool>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-      <widget class="QWidget" name="scrollAreaWidgetContents">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>924</width>
-         <height>454</height>
-        </rect>
-       </property>
-      </widget>
-     </widget>
+     <widget class="Canvas" name="canvas" native="true"/>
     </item>
     <item>
      <widget class="QListWidget" name="listWidget">
@@ -81,8 +46,18 @@
     <addaction name="actionOtw_rz"/>
     <addaction name="actionNext"/>
     <addaction name="actionPrev"/>
+    <addaction name="actionDeleteLow"/>
+    <addaction name="actionMoveGood"/>
+   </widget>
+   <widget class="QMenu" name="menuEdytuj">
+    <property name="title">
+     <string>Edytuj</string>
+    </property>
+    <addaction name="actionIncRating"/>
+    <addaction name="actionDecRating"/>
    </widget>
    <addaction name="menuPlik"/>
+   <addaction name="menuEdytuj"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -114,8 +89,42 @@
     <string>Left</string>
    </property>
   </action>
+  <action name="actionIncRating">
+   <property name="text">
+    <string>Zwiększ ocenę</string>
+   </property>
+   <property name="shortcut">
+    <string>Up</string>
+   </property>
+  </action>
+  <action name="actionDecRating">
+   <property name="text">
+    <string>Zmniejsz ocenę</string>
+   </property>
+   <property name="shortcut">
+    <string>Down</string>
+   </property>
+  </action>
+  <action name="actionDeleteLow">
+   <property name="text">
+    <string>Usuń złe</string>
+   </property>
+  </action>
+  <action name="actionMoveGood">
+   <property name="text">
+    <string>Przenieś dobre</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>Canvas</class>
+   <extends>QWidget</extends>
+   <header>canvas.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

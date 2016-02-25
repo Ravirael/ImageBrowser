@@ -5,11 +5,16 @@
 #include <QMouseEvent>
 #include <QWidget>
 
+#include "drawable.h"
+#include "eventdependanti.h"
+
 #include <memory>
 
-class ImagePainter : public QWidget
+class ImagePainter : public Drawable, public EventDependantI
 {
     Q_OBJECT
+
+    QSize size;
 public:
     explicit ImagePainter(QWidget *parent = 0);
 
@@ -22,17 +27,20 @@ public slots:
     void reset();
     void calibrate();
 
+    void draw(QWidget *canvas) override;
+    void paintEvent(QPaintEvent *event);
+
+
 private:
     std::shared_ptr<QPixmap> pixmap;
     double scale;
     QPoint positionOrigin, position, mouseOrigin;
 
 
-protected:
-    void wheelEvent(QWheelEvent *event);
-    void paintEvent(QPaintEvent *event);
-    void mousePressEvent(QMouseEvent *event);
-    void mouseMoveEvent(QMouseEvent *event);
-    void resizeEvent(QResizeEvent *event);
+public:
+    void wheelEvent(QWheelEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 };

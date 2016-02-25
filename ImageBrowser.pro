@@ -10,7 +10,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = ImageBrowser
 TEMPLATE = app
-CONFIG += c++11
+CONFIG += c++14
 
 
 SOURCES += main.cpp\
@@ -20,7 +20,11 @@ SOURCES += main.cpp\
     asyncpixmaploader.cpp \
     iconloader.cpp \
     filelistwidgetitem.cpp \
-    pixmaploadedobserver.cpp
+    pixmaploadedobserver.cpp \
+    canvas.cpp \
+    drawable.cpp \
+    ratingsystem.cpp \
+    ratingpainter.cpp
 
 HEADERS  += mainwindow.h \
     imagepainter.h \
@@ -30,6 +34,11 @@ HEADERS  += mainwindow.h \
     loadingqueue.h \
     iconloader.h \
     filelistwidgetitem.h \
-    pixmaploadedobserver.h
+    pixmaploadedobserver.h \
+    canvas.h \
+    drawable.h \
+    eventdependanti.h \
+    ratingsystem.h \
+    ratingpainter.h
 
 FORMS    += mainwindow.ui

@@ -15,12 +15,23 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->setupUi(this);
     painter = new ImagePainter;
-    ui->scrollArea->setWidget(painter);
+    //ui->scrollArea->setWidget(painter);
+    ui->canvas->addDrawable(*painter);
+    ui->canvas->addFollower(*painter);
+    ui->canvas->addDrawable(ratingPainter);
 
+    //connect(painter, SIGNAL(update()), ui->canvas, SLOT(update()));
     connect(&loader, SIGNAL(imageChanged(std::shared_ptr<QPixmap>, bool)), painter, SLOT(setPixmap(std::shared_ptr<QPixmap>, bool)));
 
     connect(ui->actionNext, SIGNAL(triggered(bool)), &loader, SLOT(next()));
     connect(ui->actionPrev, SIGNAL(triggered(bool)), &loader, SLOT(prev()));
+
+    connect(ui->actionIncRating, SIGNAL(triggered(bool)), &ratingSystem, SLOT(incRating()));
+    connect(ui->actionDecRating, SIGNAL(triggered(bool)), &ratingSystem, SLOT(decRating()));
+
+
+    connect(&ratingSystem, SIGNAL(ratingChanged(RatingSystem::Rating)), &ratingPainter, SLOT(setRating(RatingSystem::Rating)));
+
 
     ui->listWidget->setViewMode(QListWidget::IconMode);
     ui->listWidget->setIconSize(QSize(200,200));
@@ -53,9 +64,10 @@ void MainWindow::on_actionOtw_rz_triggered()
                  | QFileDialog::DontResolveSymlinks);
     //QFileInfo info(path);
 
-    loader.setDir(QDir(dirPath));
+    ratingSystem.setDir(QDir(dirPath));
 
-    iconLoader.setFiles(loader.getFiles());
+    iconLoader.setFiles(ratingSystem.getFiles());
+    loader.setFiles(ratingSystem.getFiles());
 
     ui->listWidget->blockSignals(true);
     ui->listWidget->clear();
@@ -85,6 +97,7 @@ void MainWindow::itemChanged(QListWidgetItem *, QListWidgetItem *i)
 {
     int row = ui->listWidget->currentRow();
     //qDebug() << "Slot activated. Row: " << ui->listWidget->currentRow();
+    //ui->listWidget->scrollToItem(i, QAbstractItemView::PositionAtCenter	);
 
     loader.selectFile(row);
     //loader.setFile(*(static_cast<FileListWidgetItem *>(i)->getFileInfo()));
@@ -95,27 +108,63 @@ void MainWindow::itemChanged(int index)
     ui->listWidget->blockSignals(true);
     ui->listWidget->setCurrentRow(index);
     ui->listWidget->blockSignals(false);
+    ui->listWidget->scrollToItem(ui->listWidget->currentItem(), QAbstractItemView::PositionAtCenter	);
+
+    ratingSystem.setActiveFile(index);
 }
 
 
-void MainWindow::on_actionNext_triggered()
+
+void MainWindow::on_actionDeleteLow_triggered()
 {
-//    ui->listWidget->blockSignals(true);
-//    //ui->listWidget->setCurrentRow((ui->listWidget->currentRow()+1)%ui->listWidget->count());
-//    ui->listWidget->blockSignals(false);
+    iconLoader.stopLoading();
+
+    loader.setFiles(ratingSystem.getFiles({RatingSystem::Medium, RatingSystem::Highest}));
+    iconLoader.setFiles(ratingSystem.getFiles({RatingSystem::Medium, RatingSystem::Highest}));
+
+    auto toDelete = ratingSystem.getFiles({RatingSystem::Lowest});
+
+    for (auto &file : toDelete)
+    {
+        QFile::remove(file.filePath());
+    }
+
+    ui->listWidget->blockSignals(true);
+    ui->listWidget->clear();
+
+    iconLoader.loadIconsAsync();
+
+    ui->listWidget->setCurrentRow(0);
+    ui->listWidget->blockSignals(false);
 }
 
-
-void MainWindow::on_actionPrev_triggered()
+void MainWindow::on_actionMoveGood_triggered()
 {
-//    ui->listWidget->blockSignals(true);
-//    int row = ui->listWidget->currentRow() - 1;
-//    if (row < 0)
-//    {
-//        row = ui->listWidget->count() - 1;
-//    }
+    iconLoader.stopLoading();
 
-//    row %= ui->listWidget->count();
-//    //ui->listWidget->setCurrentRow(row);
-//    ui->listWidget->blockSignals(false);
+    loader.setFiles(ratingSystem.getFiles({RatingSystem::Medium, RatingSystem::Lowest}));
+    iconLoader.setFiles(ratingSystem.getFiles({RatingSystem::Medium, RatingSystem::Lowest}));
+
+    QString dirPath = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
+                  "",
+                 QFileDialog::ShowDirsOnly
+                 | QFileDialog::DontResolveSymlinks);
+
+    QDir dir(dirPath);
+
+    auto toMove = ratingSystem.getFiles({RatingSystem::Highest});
+
+    for (auto &file : toMove)
+    {
+        Q_ASSERT(QFile::rename(file.absoluteFilePath(), dir.absoluteFilePath(file.fileName())));
+    }
+
+    ui->listWidget->blockSignals(true);
+    ui->listWidget->clear();
+
+    iconLoader.loadIconsAsync();
+
+    ui->listWidget->setCurrentRow(0);
+    ui->listWidget->blockSignals(false);
+
 }

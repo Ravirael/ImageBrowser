@@ -11,6 +11,8 @@
 #include "imagepainter.h"
 #include "imageloader.h"
 #include "iconloader.h"
+#include "ratingsystem.h"
+#include "ratingpainter.h"
 
 class QListWidgetItem;
 
@@ -32,14 +34,16 @@ private slots:
     void itemChanged(QListWidgetItem *, QListWidgetItem *);
     void itemChanged(int index);
 
-    void on_actionNext_triggered();
+    void on_actionDeleteLow_triggered();
 
-    void on_actionPrev_triggered();
+    void on_actionMoveGood_triggered();
 
 private:
     ImageLoader loader;
     ImagePainter *painter;
     IconLoader iconLoader;
+    RatingSystem ratingSystem;
+    RatingPainter ratingPainter;
     QWidget window;
     Ui::MainWindow *ui;
     QDir dir;

@@ -93,6 +93,17 @@ void ImageLoader::setDir(QDir dir)
 
 }
 
+void ImageLoader::setFiles(std::vector<QFileInfo> newFiles)
+{
+
+    files = newFiles;
+    currentFile = files.begin();
+
+    fillQueue();
+
+    emit itemChanged(0);
+}
+
 
 void ImageLoader::selectFile(int index)
 {
