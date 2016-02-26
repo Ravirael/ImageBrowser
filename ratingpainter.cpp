@@ -5,11 +5,13 @@
 RatingPainter::RatingPainter(QObject *parent):Drawable(parent),currentRating(RatingSystem::Medium)
 {
 
-    icons[RatingSystem::Highest] = ":)";
+    icons[RatingSystem::Highest] = QPixmap("://icons/mysmile.png");
 
-    icons[RatingSystem::Medium] = ":|";
+    icons[RatingSystem::Medium] = QPixmap("://icons/myunsure.png");
 
-    icons[RatingSystem::Lowest] = ":(";
+    icons[RatingSystem::Lowest] = QPixmap("://icons/mysad.png");
+
+    connect(&timer, SIGNAL(timeout()), this, SLOT(fade()));
 
 }
 
@@ -21,21 +23,38 @@ RatingPainter::~RatingPainter()
 void RatingPainter::draw(QWidget *canvas)
 {
     QPainter painter(canvas);
-    QFont font;
-    font.setPixelSize(42);
-    font.setBold(true);
-    painter.setFont(font);
-    painter.translate(32, 32);
-    painter.rotate(90);
-    painter.setPen(Qt::white);
-    painter.drawText(2, -2, icons[currentRating]);
-    painter.setPen(Qt::black);
-    painter.drawText(0, 0, icons[currentRating]);
+    painter.setOpacity(opacity);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    painter.drawPixmap(size.width()/2 - 32, size.height() - 80, 64, 64, icons[currentRating]);
+}
 
+void RatingPainter::drawMinature(QIcon *icon)
+{
+
+}
+
+void RatingPainter::fade()
+{
+    opacity -= 1;
+
+    if (opacity <= 0)
+    {
+        timer.stop();
+    }
+
+
+    emit requestUpdate();
 }
 
 void RatingPainter::setRating(RatingSystem::Rating rating)
 {
+    opacity = 0.75;
+    timer.start(2000);
     currentRating = rating;
     emit requestUpdate();
+}
+
+void RatingPainter::resizeEvent(QResizeEvent *event)
+{
+    size = event->size();
 }

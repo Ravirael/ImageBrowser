@@ -19,6 +19,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->canvas->addDrawable(*painter);
     ui->canvas->addFollower(*painter);
     ui->canvas->addDrawable(ratingPainter);
+    ui->canvas->addFollower(ratingPainter);
 
     //connect(painter, SIGNAL(update()), ui->canvas, SLOT(update()));
     connect(&loader, SIGNAL(imageChanged(std::shared_ptr<QPixmap>, bool)), painter, SLOT(setPixmap(std::shared_ptr<QPixmap>, bool)));
@@ -98,7 +99,9 @@ void MainWindow::itemChanged(QListWidgetItem *, QListWidgetItem *i)
     int row = ui->listWidget->currentRow();
     //qDebug() << "Slot activated. Row: " << ui->listWidget->currentRow();
     //ui->listWidget->scrollToItem(i, QAbstractItemView::PositionAtCenter	);
-
+    QIcon icon = i->icon();
+    ratingPainter.drawMinature(&icon);
+    i->setIcon(icon);
     loader.selectFile(row);
     //loader.setFile(*(static_cast<FileListWidgetItem *>(i)->getFileInfo()));
 }

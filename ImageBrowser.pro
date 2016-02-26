@@ -42,3 +42,6 @@ HEADERS  += mainwindow.h \
     ratingpainter.h
 
 FORMS    += mainwindow.ui
+
+RESOURCES += \
+    icons.qrc
