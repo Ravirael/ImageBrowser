@@ -31,18 +31,23 @@ const std::vector<QFileInfo> &ImageLoader::getFiles() const
     return files;
 }
 
-void ImageLoader::next()
+void ImageLoader::switchElement(int direction)
 {
-    IteratorHelper::circularIncrement(currentFile, files);
+    IteratorHelper::circularAdvance(currentFile, files, direction);
 
     emit itemChanged(std::distance(files.begin(), currentFile));
 
-    IteratorHelper::circularIncrement(currentPixmap, pixmaps);
+    IteratorHelper::circularAdvance(currentPixmap, pixmaps, direction);
 
     if ((*currentPixmap)->isLoaded())
     {
         emit imageChanged((*currentPixmap)->getPixmap(), false);
     }
+}
+
+void ImageLoader::next()
+{
+    switchElement(1);
 
     QString path = IteratorHelper::circularNext(currentFile, files, postCount)->filePath();
 
@@ -53,16 +58,7 @@ void ImageLoader::next()
 
 void ImageLoader::prev()
 {
-    IteratorHelper::circularDecrement(currentFile, files);
-
-    emit itemChanged(std::distance(files.begin(), currentFile));
-
-    IteratorHelper::circularDecrement(currentPixmap, pixmaps);
-
-    if ((*currentPixmap)->isLoaded())
-    {
-        emit imageChanged((*currentPixmap)->getPixmap(), false);
-    }
+    switchElement(-1);
 
     QString path = IteratorHelper::circularNext(currentFile, files, -prevCount)->filePath();
 
@@ -200,4 +196,6 @@ void ImageLoader::updateQueue()
         }
     }
 }
+
+
 

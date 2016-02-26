@@ -30,12 +30,13 @@ public:
 
     std::vector<QFileInfo> getFiles() const;
     std::vector<QFileInfo> getFiles(const std::set<Rating> &desiredRating) const;
+    Rating ratingOf(int index) const;
 
 signals:
     void ratingChanged(RatingSystem::Rating);
 
 public slots:
-    void setDir(QDir dir);
+    void setDir(QDir dir, QDirIterator::IteratorFlag flags = QDirIterator::NoIteratorFlags);
     void setActiveFile(int index);
     void incRating();
     void decRating();

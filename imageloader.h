@@ -35,7 +35,7 @@ private:
     QSize size;
 
     PixmapLoadedObserver observer;
-    LoadingQueue<AsyncPixmapLoader, PixmapLoadedObserver> loadingQueue;
+    LoadingQueue<std::shared_ptr<AsyncPixmapLoader>, PixmapLoadedObserver&> loadingQueue;
     std::thread loadingThread;
 
 public:
@@ -62,6 +62,8 @@ private slots:
     void newPixmap(std::shared_ptr<AsyncPixmapLoader> pixmap);
     void fillQueue();
     void updateQueue();
+
+    void switchElement(int direction);
 
 private:
     static QPixmap load(QString path);

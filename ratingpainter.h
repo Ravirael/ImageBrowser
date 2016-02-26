@@ -17,26 +17,30 @@ class RatingPainter : public Drawable, public EventDependantI
     std::map<RatingSystem::Rating, QPixmap> icons;
     RatingSystem::Rating currentRating;
     QSize size;
-    QTimer timer;
-    qreal opacity = 1.0;
+    QTimer timer, fadeTimer;
+    qreal opacity = 0.0;
 
 public:
     RatingPainter(QObject *parent = 0);
     virtual ~RatingPainter();
 
+    QPixmap getPixmap() const;
+    QPixmap getPixmap(RatingSystem::Rating) const;
+
     // Drawable interface
 public slots:
     void draw(QWidget *canvas) override;
-    void drawMinature(QIcon *icon);
+    void display();
     void fade();
     void setRating(RatingSystem::Rating rating);
+
 
     // EventDependantI interface
 public:
     void resizeEvent(QResizeEvent *event) override;
-    void mousePressEvent(QMouseEvent *event) override{};
-    void mouseMoveEvent(QMouseEvent *event) override{};
-    void wheelEvent(QWheelEvent *event) override{};
+    void mousePressEvent(QMouseEvent *) override{}
+    void mouseMoveEvent(QMouseEvent *) override{}
+    void wheelEvent(QWheelEvent *) override{}
 };
 
 #endif // RATINGPAINTER_H

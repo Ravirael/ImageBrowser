@@ -7,37 +7,42 @@
 #include <mutex>
 #include <memory>
 #include <vector>
+#include <condition_variable>
 #include "asyncpixmaploader.h"
 
 template <typename T, typename O>
 class LoadingQueue
 {
-    std::list<std::shared_ptr<T>> tasksList;
+    std::list<T> tasksList;
     std::mutex tasksLock;
+    std::condition_variable cv;
 
-    O &observer;
+    O observer;
     std::atomic_bool stop;
 
 
 public:
-    explicit LoadingQueue(O &observer):observer(observer),
+    explicit LoadingQueue(O observer):observer(observer),
                                        stop(false)
     {
 
     }
 
-public:
-    void addToBegining(const std::shared_ptr<T> &elem)
+    void addToBegining(T elem)
     {
-        withLock([&]{tasksList.push_back(elem);});
+        std::unique_lock<std::mutex> lock(tasksLock);
+        tasksList.push_back(elem);
+        cv.notify_one();
     }
 
-    void addToEnd(const std::shared_ptr<T> &elem)
+    void addToEnd(T elem)
     {
-        withLock([&]{tasksList.push_front(elem);});
+        std::unique_lock<std::mutex> lock(tasksLock);
+        tasksList.push_front(elem);
+        cv.notify_one();
     }
 
-    void remove(const std::shared_ptr<T> &elem)
+    void remove(T elem)
     {
         withLock([&]{tasksList.remove(elem);});
     }
@@ -50,11 +55,12 @@ public:
     void stopTasks()
     {
         stop = true;
+        cv.notify_one();
     }
 
     void performTasks()
     {
-        std::shared_ptr<T> current = nullptr;
+        T current = nullptr;
         stop = false;
 
         while (!stop)
@@ -79,7 +85,11 @@ public:
             }
             else
             {
-                std::this_thread::yield();
+                std::unique_lock<std::mutex> lock(tasksLock);
+                while (tasksList.empty() && !stop)
+                {
+                    cv.wait(lock);
+                }
             }
 
         }

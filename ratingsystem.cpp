@@ -23,14 +23,19 @@ std::vector<QFileInfo> RatingSystem::getFiles(const std::set<RatingSystem::Ratin
     return onlyFiles;
 }
 
+RatingSystem::Rating RatingSystem::ratingOf(int index) const
+{
+    return std::next(files.begin(), index)->second;
+}
 
 
-void RatingSystem::setDir(QDir dir)
+
+void RatingSystem::setDir(QDir dir, QDirIterator::IteratorFlag flags)
 {
     QDirIterator it(dir.absolutePath(),
                     QStringList{"*.jpg","*.jpeg","*.png","*.bmp"},
                     QDir::Files | QDir::NoDotAndDotDot,
-                    QDirIterator::Subdirectories);
+                    flags);
 
     files.clear();
 

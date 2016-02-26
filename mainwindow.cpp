@@ -5,6 +5,9 @@
 #include <QHBoxLayout>
 #include <QDebug>
 #include <QIcon>
+#include <QStandardPaths>
+
+#include <type_traits>
 
 #include "filelistwidgetitem.h"
 
@@ -12,7 +15,6 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-
     ui->setupUi(this);
     painter = new ImagePainter;
     //ui->scrollArea->setWidget(painter);
@@ -27,8 +29,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionNext, SIGNAL(triggered(bool)), &loader, SLOT(next()));
     connect(ui->actionPrev, SIGNAL(triggered(bool)), &loader, SLOT(prev()));
 
-    connect(ui->actionIncRating, SIGNAL(triggered(bool)), &ratingSystem, SLOT(incRating()));
-    connect(ui->actionDecRating, SIGNAL(triggered(bool)), &ratingSystem, SLOT(decRating()));
+    //connect(ui->actionIncRating, SIGNAL(triggered(bool)), &ratingSystem, SLOT(incRating()));
+    //connect(ui->actionDecRating, SIGNAL(triggered(bool)), &ratingSystem, SLOT(decRating()));
 
 
     connect(&ratingSystem, SIGNAL(ratingChanged(RatingSystem::Rating)), &ratingPainter, SLOT(setRating(RatingSystem::Rating)));
@@ -58,52 +60,31 @@ MainWindow::~MainWindow()
 void MainWindow::on_actionOtw_rz_triggered()
 {
     iconLoader.stopLoading();
-    //QString path = QFileDialog::getOpenFileName(this, tr("Otworz plik"), tr(""), tr("Plik JPG (*.jpg)"));
-    QString dirPath = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
-                  "",
-                 QFileDialog::ShowDirsOnly
-                 | QFileDialog::DontResolveSymlinks);
-    //QFileInfo info(path);
-
-    ratingSystem.setDir(QDir(dirPath));
-
-    iconLoader.setFiles(ratingSystem.getFiles());
-    loader.setFiles(ratingSystem.getFiles());
-
-    ui->listWidget->blockSignals(true);
-    ui->listWidget->clear();
-
-    iconLoader.loadIconsAsync();
-
-    ui->listWidget->setCurrentRow(0);
-    ui->listWidget->blockSignals(false);
 
 
+    QString formats = "Obrazy (*.jpg *.jpeg *.png *.bmp *.JPG *.JPEG *.PNG *.BMP);;Wszystkie (*.*)";
+    const QStringList picturesLocations = QStandardPaths::standardLocations(QStandardPaths::PicturesLocation);
+    QFileDialog dialog(this, tr("Open File"),
+                       picturesLocations.isEmpty() ? QDir::currentPath() : picturesLocations.last(),
+                       formats);
+    dialog.setAcceptMode(QFileDialog::AcceptOpen);
 
-//    dir=info.dir();
-  //  fileList = dir.entryList();
- //   qDebug()<<dir.path();
 
-    //window.setLayout(ui->horizontalLayout);
-    //window.showFullScreen();
+    dialog.exec();
+
+    openFile(dialog.selectedFiles().first());
 }
 
 void MainWindow::iconLoaded(QIcon icon, QFileInfo *file)
 {
     ui->listWidget->addItem(new FileListWidgetItem(icon, file));
-    //ui->listWidget->repaint();
+    drawPixmapOnIcon(ui->listWidget->count()-1);
 }
 
 void MainWindow::itemChanged(QListWidgetItem *, QListWidgetItem *i)
 {
     int row = ui->listWidget->currentRow();
-    //qDebug() << "Slot activated. Row: " << ui->listWidget->currentRow();
-    //ui->listWidget->scrollToItem(i, QAbstractItemView::PositionAtCenter	);
-    QIcon icon = i->icon();
-    ratingPainter.drawMinature(&icon);
-    i->setIcon(icon);
     loader.selectFile(row);
-    //loader.setFile(*(static_cast<FileListWidgetItem *>(i)->getFileInfo()));
 }
 
 void MainWindow::itemChanged(int index)
@@ -111,7 +92,8 @@ void MainWindow::itemChanged(int index)
     ui->listWidget->blockSignals(true);
     ui->listWidget->setCurrentRow(index);
     ui->listWidget->blockSignals(false);
-    ui->listWidget->scrollToItem(ui->listWidget->currentItem(), QAbstractItemView::PositionAtCenter	);
+    ui->listWidget->scrollToItem(ui->listWidget->currentItem(),
+                                 QAbstractItemView::PositionAtCenter);
 
     ratingSystem.setActiveFile(index);
 }
@@ -143,7 +125,6 @@ void MainWindow::on_actionDeleteLow_triggered()
 
 void MainWindow::on_actionMoveGood_triggered()
 {
-    iconLoader.stopLoading();
 
     loader.setFiles(ratingSystem.getFiles({RatingSystem::Medium, RatingSystem::Lowest}));
     iconLoader.setFiles(ratingSystem.getFiles({RatingSystem::Medium, RatingSystem::Lowest}));
@@ -170,4 +151,62 @@ void MainWindow::on_actionMoveGood_triggered()
     ui->listWidget->setCurrentRow(0);
     ui->listWidget->blockSignals(false);
 
+}
+
+void MainWindow::drawPixmapOnIcon(int row)
+{
+    auto item = static_cast<FileListWidgetItem *>(ui->listWidget->item(row));
+    QPixmap icon = item->getFirstPixmap();
+    QPainter painter(&icon);
+    painter.setOpacity(0.75);
+    painter.drawPixmap(8, 8, 32, 32, ratingPainter.getPixmap(ratingSystem.ratingOf(row)));
+    item->setIcon(QIcon(icon));
+    //ui->listWidget->repaint();
+}
+
+void MainWindow::on_actionIncRating_triggered()
+{
+    ratingSystem.incRating();
+    drawPixmapOnIcon(ui->listWidget->currentRow());
+    ratingPainter.display();
+}
+
+void MainWindow::on_actionDecRating_triggered()
+{
+    ratingSystem.decRating();
+    drawPixmapOnIcon(ui->listWidget->currentRow());
+    ratingPainter.display();
+}
+
+void MainWindow::openFile(const QString &path, QDirIterator::IteratorFlag flags)
+{
+    QFileInfo file(path);
+    int index = 0;
+
+    if (file.isDir())
+    {
+        ratingSystem.setDir(QDir(path), flags);
+    }
+    else
+    {
+        ratingSystem.setDir(file.dir(), flags);
+    }
+
+    iconLoader.setFiles(ratingSystem.getFiles());
+    loader.setFiles(ratingSystem.getFiles());
+
+    if (file.isFile())
+    {
+        auto files = ratingSystem.getFiles();
+        index = std::distance(files.begin(), std::find(files.begin(), files.end(), file));
+        loader.selectFile(index);
+    }
+
+
+    ui->listWidget->blockSignals(true);
+    ui->listWidget->clear();
+    iconLoader.loadIconsAsync();
+
+    ui->listWidget->setCurrentRow(index);
+    ui->listWidget->blockSignals(false);
 }

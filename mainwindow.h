@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QLabel>
 #include <QDir>
+#include <QDirIterator>
 
 #include <thread>
 #include <memory>
@@ -15,6 +16,7 @@
 #include "ratingpainter.h"
 
 class QListWidgetItem;
+
 
 namespace Ui {
 class MainWindow;
@@ -38,7 +40,14 @@ private slots:
 
     void on_actionMoveGood_triggered();
 
+    void drawPixmapOnIcon(int row);
+
+    void on_actionIncRating_triggered();
+
+    void on_actionDecRating_triggered();
+
 private:
+    void openFile(const QString &path, QDirIterator::IteratorFlag flags =  QDirIterator::NoIteratorFlags);
     ImageLoader loader;
     ImagePainter *painter;
     IconLoader iconLoader;

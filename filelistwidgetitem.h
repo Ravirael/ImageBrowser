@@ -12,11 +12,13 @@ class FileListWidgetItem : public QListWidgetItem
     //Q_OBJECT
 
     QFileInfo *file;
+    QPixmap firstPixmap;
 
 public:
     explicit FileListWidgetItem(const QIcon &icon, QFileInfo *file, QListWidget *parent = 0);
 
     const QFileInfo *getFileInfo() const;
+    QPixmap getFirstPixmap() const;
 
 //signals:
 
