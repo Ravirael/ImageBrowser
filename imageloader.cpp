@@ -31,6 +31,11 @@ const std::vector<QFileInfo> &ImageLoader::getFiles() const
     return files;
 }
 
+int ImageLoader::currentIndex() const
+{
+    return std::distance<std::vector<QFileInfo>::const_iterator>(files.begin(), currentFile);
+}
+
 void ImageLoader::switchElement(int direction)
 {
     IteratorHelper::circularAdvance(currentFile, files, direction);

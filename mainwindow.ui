@@ -56,8 +56,15 @@
     <addaction name="actionIncRating"/>
     <addaction name="actionDecRating"/>
    </widget>
+   <widget class="QMenu" name="menuWidok">
+    <property name="title">
+     <string>Widok</string>
+    </property>
+    <addaction name="actionFullSize"/>
+   </widget>
    <addaction name="menuPlik"/>
    <addaction name="menuEdytuj"/>
+   <addaction name="menuWidok"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -113,6 +120,14 @@
   <action name="actionMoveGood">
    <property name="text">
     <string>Przenieś dobre</string>
+   </property>
+  </action>
+  <action name="actionFullSize">
+   <property name="text">
+    <string>Pełny ekran</string>
+   </property>
+   <property name="shortcut">
+    <string>F5</string>
    </property>
   </action>
  </widget>

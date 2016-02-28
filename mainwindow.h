@@ -46,6 +46,8 @@ private slots:
 
     void on_actionDecRating_triggered();
 
+    void on_actionFullSize_triggered();
+
 private:
     void openFile(const QString &path, QDirIterator::IteratorFlag flags =  QDirIterator::NoIteratorFlags);
     ImageLoader loader;

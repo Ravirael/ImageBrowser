@@ -77,8 +77,14 @@ void MainWindow::on_actionOtw_rz_triggered()
 
 void MainWindow::iconLoaded(QIcon icon, QFileInfo *file)
 {
-    ui->listWidget->addItem(new FileListWidgetItem(icon, file));
+    auto item = new FileListWidgetItem(icon, file);
+    ui->listWidget->addItem(item);
     drawPixmapOnIcon(ui->listWidget->count()-1);
+
+    if (ui->listWidget->row(item) == loader.currentIndex())
+    {
+        itemChanged(loader.currentIndex());
+    }
 }
 
 void MainWindow::itemChanged(QListWidgetItem *, QListWidgetItem *i)
@@ -156,6 +162,12 @@ void MainWindow::on_actionMoveGood_triggered()
 void MainWindow::drawPixmapOnIcon(int row)
 {
     auto item = static_cast<FileListWidgetItem *>(ui->listWidget->item(row));
+
+    if (!item)
+    {
+        return;
+    }
+
     QPixmap icon = item->getFirstPixmap();
     QPainter painter(&icon);
     painter.setOpacity(0.75);
@@ -202,11 +214,30 @@ void MainWindow::openFile(const QString &path, QDirIterator::IteratorFlag flags)
         loader.selectFile(index);
     }
 
-
     ui->listWidget->blockSignals(true);
     ui->listWidget->clear();
     iconLoader.loadIconsAsync();
 
     ui->listWidget->setCurrentRow(index);
     ui->listWidget->blockSignals(false);
+}
+
+void MainWindow::on_actionFullSize_triggered()
+{
+    static bool isFullSize = false;
+
+    if (!isFullSize)
+    {
+        ui->listWidget->hide();
+        ui->menuBar->hide();
+        this->showFullScreen();
+    }
+    else
+    {
+        this->showNormal();
+        ui->listWidget->show();
+        ui->menuBar->show();
+    }
+
+    isFullSize = !isFullSize;
 }

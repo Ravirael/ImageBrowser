@@ -43,6 +43,7 @@ public:
     ~ImageLoader();
 
     const std::vector<QFileInfo> &getFiles() const;
+    int currentIndex() const;
 
 signals:
     void imageChanged(std::shared_ptr<QPixmap> pixmap, bool);

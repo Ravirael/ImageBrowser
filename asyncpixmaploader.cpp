@@ -18,7 +18,6 @@ AsyncPixmapLoader::AsyncPixmapLoader(const AsyncPixmapLoader &loader) :
 
 AsyncPixmapLoader::~AsyncPixmapLoader()
 {
-    joinThread();
 }
 
 bool AsyncPixmapLoader::isLoaded() const
@@ -36,13 +35,6 @@ std::shared_ptr<QPixmap> AsyncPixmapLoader::getPixmap()
     return nullptr;
 }
 
-void AsyncPixmapLoader::joinThread()
-{
-    if (thread.joinable())
-    {
-        thread.join();
-    }
-}
 
 bool AsyncPixmapLoader::isReloaded() const
 {
@@ -93,12 +85,6 @@ void AsyncPixmapLoader::operator()()
 
 }
 
-
-void AsyncPixmapLoader::load()
-{
-    ready = false;
-    thread = std::thread([this]{this->operator()();});
-}
 
 void AsyncPixmapLoader::setSize(const QSize &size)
 {

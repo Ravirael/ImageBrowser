@@ -2,8 +2,6 @@
 #define ASYNCPIXMAPLOADER_H
 #include <QObject>
 #include <QPixmap>
-#include <future>
-#include <thread>
 #include <memory>
 #include <atomic>
 
@@ -17,15 +15,13 @@ class AsyncPixmapLoader : public QObject
     std::atomic_bool ready;
     bool fullSize = false;
     bool reloaded;
-    std::thread thread;
 
 public:
     explicit AsyncPixmapLoader(QString path, QSize maxSize = QSize(0, 0), QObject *parent = 0, bool reloaded = false);
     AsyncPixmapLoader(const AsyncPixmapLoader &loader);
-    ~AsyncPixmapLoader();
+    virtual ~AsyncPixmapLoader();
     bool isLoaded() const;
     std::shared_ptr<QPixmap> getPixmap();
-    void joinThread();
     bool isFullSize() const;
     bool isReloaded() const;
     QSize getSize() const;
@@ -37,7 +33,6 @@ signals:
     void loadingFinished(AsyncPixmapLoader *);
 
 public slots:
-    void load();
     void setSize(const QSize &size);
 };
 #endif //ASYNCPIXMAPLOADER_H
