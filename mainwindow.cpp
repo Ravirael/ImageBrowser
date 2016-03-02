@@ -17,24 +17,23 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     painter = new ImagePainter;
-    //ui->scrollArea->setWidget(painter);
+
     ui->canvas->addDrawable(*painter);
     ui->canvas->addFollower(*painter);
     ui->canvas->addDrawable(ratingPainter);
     ui->canvas->addFollower(ratingPainter);
 
-    //connect(painter, SIGNAL(update()), ui->canvas, SLOT(update()));
-    connect(&loader, SIGNAL(imageChanged(std::shared_ptr<QPixmap>, bool)), painter, SLOT(setPixmap(std::shared_ptr<QPixmap>, bool)));
+    connect(&loader, SIGNAL(imageChanged(QPixmap, bool)),
+            painter, SLOT(setPixmap(QPixmap, bool)));
 
-    connect(ui->actionNext, SIGNAL(triggered(bool)), &loader, SLOT(next()));
-    connect(ui->actionPrev, SIGNAL(triggered(bool)), &loader, SLOT(prev()));
+    connect(ui->actionNext, SIGNAL(triggered(bool)),
+            &loader, SLOT(next()));
 
-    //connect(ui->actionIncRating, SIGNAL(triggered(bool)), &ratingSystem, SLOT(incRating()));
-    //connect(ui->actionDecRating, SIGNAL(triggered(bool)), &ratingSystem, SLOT(decRating()));
+    connect(ui->actionPrev, SIGNAL(triggered(bool)),
+            &loader, SLOT(prev()));
 
-
-    connect(&ratingSystem, SIGNAL(ratingChanged(RatingSystem::Rating)), &ratingPainter, SLOT(setRating(RatingSystem::Rating)));
-
+    connect(&ratingSystem, SIGNAL(ratingChanged(RatingSystem::Rating)),
+            &ratingPainter, SLOT(setRating(RatingSystem::Rating)));
 
     ui->listWidget->setViewMode(QListWidget::IconMode);
     ui->listWidget->setIconSize(QSize(200,200));
@@ -42,12 +41,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->listWidget->setFlow(QListWidget::LeftToRight);
     ui->listWidget->setWrapping(false);
 
-    connect(ui->listWidget, SIGNAL(currentItemChanged(QListWidgetItem*,QListWidgetItem*)), this, SLOT(itemChanged(QListWidgetItem*,QListWidgetItem*)));
+    connect(ui->listWidget, SIGNAL(currentItemChanged(QListWidgetItem*,QListWidgetItem*)),
+            this, SLOT(itemChanged(QListWidgetItem*,QListWidgetItem*)));
 
     connect(&iconLoader, SIGNAL(iconLoaded(QIcon, QFileInfo*)), this, SLOT(iconLoaded(QIcon, QFileInfo*)));
     connect(painter, SIGNAL(sizeChanged(QSize)), &loader, SLOT(setSize(QSize)));
     connect(&loader, SIGNAL(itemChanged(int)), this, SLOT(itemChanged(int)));
-    //connect(painter, SIGNAL(sizeChanged(QSize)), painter, SLOT(calibrate()));
 
     connect(painter, SIGNAL(zoomed()), &loader, SLOT(loadCurrentFullSize()));
 }
@@ -60,7 +59,6 @@ MainWindow::~MainWindow()
 void MainWindow::on_actionOtw_rz_triggered()
 {
     iconLoader.stopLoading();
-
 
     QString formats = "Obrazy (*.jpg *.jpeg *.png *.bmp *.JPG *.JPEG *.PNG *.BMP);;Wszystkie (*.*)";
     const QStringList picturesLocations = QStandardPaths::standardLocations(QStandardPaths::PicturesLocation);

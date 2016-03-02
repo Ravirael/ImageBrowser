@@ -1,19 +1,11 @@
 #include "asyncpixmaploader.h"
 #include <QPixmap>
 #include <QImageReader>
-#include <chrono>
 
 AsyncPixmapLoader::AsyncPixmapLoader(QString path, QSize maxSize, QObject *parent, bool reloaded) :
-    QObject(parent), ready(false), maxSize(maxSize), path(path), reloaded(reloaded)
+    QObject(parent), maxSize(maxSize), path(path), ready(false), reloaded(reloaded)
 {
-    pixmap = std::make_shared<QPixmap>();
-}
 
-AsyncPixmapLoader::AsyncPixmapLoader(const AsyncPixmapLoader &loader) :
-    QObject(loader.parent()), ready(false), maxSize(loader.maxSize), path(loader.path), reloaded(loader.reloaded)
-
-{
-    pixmap = loader.pixmap;
 }
 
 AsyncPixmapLoader::~AsyncPixmapLoader()
@@ -25,14 +17,14 @@ bool AsyncPixmapLoader::isLoaded() const
     return ready;
 }
 
-std::shared_ptr<QPixmap> AsyncPixmapLoader::getPixmap()
+QPixmap AsyncPixmapLoader::getPixmap()
 {
     if (ready)
     {
         return pixmap;
     }
 
-    return nullptr;
+    return QPixmap();
 }
 
 
@@ -78,13 +70,9 @@ void AsyncPixmapLoader::operator()()
         }
     }
 
-    *pixmap = QPixmap::fromImage(reader.read());
+    pixmap = QPixmap::fromImage(reader.read());
     ready = true;
-    emit loadingFinished(this);
-    emit pixmapReady(pixmap);
-
 }
-
 
 void AsyncPixmapLoader::setSize(const QSize &size)
 {

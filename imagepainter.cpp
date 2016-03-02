@@ -4,25 +4,25 @@
 #include <QDir>
 
 ImagePainter::ImagePainter(QWidget *parent) :
-    Drawable(parent), pixmap(nullptr), scale(1.0f)
+    Drawable(parent), scale(1.0f)
 {
 }
 
-void ImagePainter::setPixmap(std::shared_ptr<QPixmap> pixmap, bool reload)
+void ImagePainter::setPixmap(QPixmap pixmap, bool reload)
 {
     static QSize prevSize;
     bool calib = true;
 
-    if (!pixmap)
+    /*if (!pixmap)
     {
         this->pixmap = pixmap;
         emit requestUpdate();
         return;
-    }
+    }*/
 
     if (reload)
     {
-        double scaleRatio = (double)prevSize.height()/pixmap->size().height();
+        double scaleRatio = (double)prevSize.height()/pixmap.size().height();
         scale *= scaleRatio;
         calib = false;
     }
@@ -36,7 +36,7 @@ void ImagePainter::setPixmap(std::shared_ptr<QPixmap> pixmap, bool reload)
 
     emit requestUpdate();
 
-    prevSize = this->pixmap->size();
+    prevSize = this->pixmap.size();
 }
 
 /**
@@ -44,7 +44,7 @@ void ImagePainter::setPixmap(std::shared_ptr<QPixmap> pixmap, bool reload)
  */
 void ImagePainter::reset()
 {
-    pixmap = nullptr;
+    pixmap = QPixmap();
     scale = 1.0f;
     position = positionOrigin = mouseOrigin = QPoint();
 }
@@ -59,16 +59,16 @@ void ImagePainter::calibrate()
 
     scale = 1.0f;
 
-    if (pixmap->width()/(qreal)size.width() < pixmap->height()/(qreal)size.height())
+    if (pixmap.width()/(qreal)size.width() < pixmap.height()/(qreal)size.height())
     {
-        scale *= size.height()*scale_correction/pixmap->height();
+        scale *= size.height()*scale_correction/pixmap.height();
     }
     else
     {
-        scale *= size.width()*scale_correction/pixmap->width();
+        scale *= size.width()*scale_correction/pixmap.width();
     }
 
-    position = center - QPoint((scale*pixmap->width())/2, (scale*pixmap->height())/2);
+    position = center - QPoint((scale*pixmap.width())/2, (scale*pixmap.height())/2);
 }
 
 void ImagePainter::draw(QWidget *canvas)
@@ -78,10 +78,10 @@ void ImagePainter::draw(QWidget *canvas)
     painter.translate(position);
     painter.scale(scale, scale);
 
-    if (pixmap)
-    {
-        painter.drawPixmap(0, 0, *pixmap);
-    }
+    //if (!pixmap.isNull())
+    //{
+        painter.drawPixmap(0, 0, pixmap);
+    //}
 }
 
 void ImagePainter::wheelEvent(QWheelEvent *event)
@@ -100,20 +100,6 @@ void ImagePainter::wheelEvent(QWheelEvent *event)
     scale *= scaleFactor;
     position.rx() = scaleFactor*position.x() + (1.0-scaleFactor)*event->x();
     position.ry() = scaleFactor*position.y() + (1.0-scaleFactor)*event->y();
-}
-
-void ImagePainter::paintEvent(QPaintEvent *event)
-{
-//    QPainter painter(this);
-//    painter.setRenderHint(QPainter::SmoothPixmapTransform);
-//    painter.translate(position);
-//    painter.scale(scale, scale);
-
-//    if (pixmap)
-//    {
-//        painter.drawPixmap(0, 0, *pixmap);
-//    }
-
 }
 
 void ImagePainter::mousePressEvent(QMouseEvent *event)

@@ -42,7 +42,7 @@ void ImageLoader::switchElement(int direction)
 
     emit itemChanged(std::distance(files.begin(), currentFile));
 
-    IteratorHelper::circularAdvance(currentPixmap, pixmaps, direction);
+    std::advance(currentPixmap, direction);
 
     if ((*currentPixmap)->isLoaded())
     {
@@ -193,7 +193,7 @@ void ImageLoader::updateQueue()
         }
     }
 
-    for(auto iter = pixmaps.begin(); iter != pixmaps.end(); ++iter)
+    for(auto iter = pixmaps.begin(); iter != currentPixmap; ++iter)
     {
         if (!(*iter)->isLoaded())
         {

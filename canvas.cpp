@@ -13,7 +13,6 @@ void Canvas::paintEvent(QPaintEvent *)
     {
         d->draw(this);
     }
-
 }
 
 void Canvas::resizeEvent(QResizeEvent *event)

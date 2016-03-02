@@ -46,7 +46,7 @@ public:
     int currentIndex() const;
 
 signals:
-    void imageChanged(std::shared_ptr<QPixmap> pixmap, bool);
+    void imageChanged(QPixmap pixmap, bool);
     void itemChanged(int index);
 
 public slots:

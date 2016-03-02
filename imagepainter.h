@@ -23,16 +23,15 @@ signals:
     void zoomed();
 
 public slots:
-    void setPixmap(std::shared_ptr<QPixmap>, bool reload);
+    void setPixmap(QPixmap, bool reload);
     void reset();
     void calibrate();
 
     void draw(QWidget *canvas) override;
-    void paintEvent(QPaintEvent *event);
 
 
 private:
-    std::shared_ptr<QPixmap> pixmap;
+    QPixmap pixmap;
     double scale;
     QPoint positionOrigin, position, mouseOrigin;
 
