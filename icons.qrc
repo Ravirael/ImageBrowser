@@ -3,5 +3,8 @@
         <file>icons/mysad.png</file>
         <file>icons/mysmile.png</file>
         <file>icons/myunsure.png</file>
+        <file>icons/bad.png</file>
+        <file>icons/good.png</file>
+        <file>icons/neutral.png</file>
     </qresource>
 </RCC>

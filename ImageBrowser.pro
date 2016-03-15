@@ -24,7 +24,8 @@ SOURCES += main.cpp\
     canvas.cpp \
     drawable.cpp \
     ratingsystem.cpp \
-    ratingpainter.cpp
+    ratingpainter.cpp \
+    imageloadingqueue.cpp
 
 HEADERS  += mainwindow.h \
     imagepainter.h \
@@ -39,7 +40,8 @@ HEADERS  += mainwindow.h \
     drawable.h \
     eventdependanti.h \
     ratingsystem.h \
-    ratingpainter.h
+    ratingpainter.h \
+    imageloadingqueue.h
 
 FORMS    += mainwindow.ui
 

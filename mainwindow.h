@@ -51,7 +51,7 @@ private slots:
 private:
     void openFile(const QString &path, QDirIterator::IteratorFlag flags =  QDirIterator::NoIteratorFlags);
     ImageLoader loader;
-    ImagePainter *painter;
+    ImagePainter painter;
     IconLoader iconLoader;
     RatingSystem ratingSystem;
     RatingPainter ratingPainter;

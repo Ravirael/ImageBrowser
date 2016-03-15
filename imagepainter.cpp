@@ -51,7 +51,7 @@ void ImagePainter::reset()
 
 void ImagePainter::calibrate()
 {
-    const qreal scale_correction = 0.98;
+    const qreal scale_correction = 1.0;
     QPoint center(size.width()/2, size.height()/2);
 
     if (!pixmap)

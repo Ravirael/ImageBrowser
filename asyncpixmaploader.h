@@ -1,6 +1,7 @@
 #ifndef ASYNCPIXMAPLOADER_H
 #define ASYNCPIXMAPLOADER_H
 #include <QObject>
+#include <QImage>
 #include <QPixmap>
 #include <memory>
 #include <atomic>
@@ -11,6 +12,7 @@ class AsyncPixmapLoader : public QObject
 
     QSize maxSize;
     QString path;
+    QImage image;
     QPixmap pixmap;
     std::atomic_bool ready;
     bool fullSize = false;

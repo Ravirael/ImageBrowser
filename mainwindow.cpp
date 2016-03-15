@@ -16,15 +16,14 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    painter = new ImagePainter;
 
-    ui->canvas->addDrawable(*painter);
-    ui->canvas->addFollower(*painter);
+    ui->canvas->addDrawable(painter);
+    ui->canvas->addFollower(painter);
     ui->canvas->addDrawable(ratingPainter);
     ui->canvas->addFollower(ratingPainter);
 
     connect(&loader, SIGNAL(imageChanged(QPixmap, bool)),
-            painter, SLOT(setPixmap(QPixmap, bool)));
+            &painter, SLOT(setPixmap(QPixmap, bool)));
 
     connect(ui->actionNext, SIGNAL(triggered(bool)),
             &loader, SLOT(next()));
@@ -45,10 +44,10 @@ MainWindow::MainWindow(QWidget *parent) :
             this, SLOT(itemChanged(QListWidgetItem*,QListWidgetItem*)));
 
     connect(&iconLoader, SIGNAL(iconLoaded(QIcon, QFileInfo*)), this, SLOT(iconLoaded(QIcon, QFileInfo*)));
-    connect(painter, SIGNAL(sizeChanged(QSize)), &loader, SLOT(setSize(QSize)));
+    connect(&painter, SIGNAL(sizeChanged(QSize)), &loader, SLOT(setSize(QSize)));
     connect(&loader, SIGNAL(itemChanged(int)), this, SLOT(itemChanged(int)));
 
-    connect(painter, SIGNAL(zoomed()), &loader, SLOT(loadCurrentFullSize()));
+    connect(&painter, SIGNAL(zoomed()), &loader, SLOT(loadCurrentFullSize()));
 }
 
 MainWindow::~MainWindow()
@@ -83,9 +82,19 @@ void MainWindow::iconLoaded(QIcon icon, QFileInfo *file)
     {
         itemChanged(loader.currentIndex());
     }
+
+    float percentage = (ui->listWidget->count() * 100) / (float)ratingSystem.getFiles().size();
+    QString message;
+    message.sprintf("Ładowanie miniatur: %.2f%%", percentage);
+
+    if (percentage < 100.0f)
+        ui->statusBar->showMessage(message);
+    else
+        ui->statusBar->showMessage("Ładowanie miniatur zakończone!", 2000);
+
 }
 
-void MainWindow::itemChanged(QListWidgetItem *, QListWidgetItem *i)
+void MainWindow::itemChanged(QListWidgetItem *, QListWidgetItem *)
 {
     int row = ui->listWidget->currentRow();
     loader.selectFile(row);
@@ -171,7 +180,6 @@ void MainWindow::drawPixmapOnIcon(int row)
     painter.setOpacity(0.75);
     painter.drawPixmap(8, 8, 32, 32, ratingPainter.getPixmap(ratingSystem.ratingOf(row)));
     item->setIcon(QIcon(icon));
-    //ui->listWidget->repaint();
 }
 
 void MainWindow::on_actionIncRating_triggered()
@@ -223,18 +231,31 @@ void MainWindow::openFile(const QString &path, QDirIterator::IteratorFlag flags)
 void MainWindow::on_actionFullSize_triggered()
 {
     static bool isFullSize = false;
+    static int left, right, top, bottom, spacing;
+    auto centralLayout = ui->centralWidget->layout();
+
 
     if (!isFullSize)
     {
-        ui->listWidget->hide();
-        ui->menuBar->hide();
+        centralLayout->getContentsMargins(&left, &top,
+                                          &right, &bottom);
+        spacing = centralLayout->spacing();
+        centralLayout->setContentsMargins(QMargins());
+        centralLayout->setSpacing(0);
+        ui->listWidget->setMaximumHeight(0);
+        ui->menuBar->setMaximumHeight(0);
         this->showFullScreen();
+        statusBar()->hide();
     }
     else
     {
         this->showNormal();
-        ui->listWidget->show();
-        ui->menuBar->show();
+        centralLayout->setContentsMargins(left, top,
+                                          right, bottom);
+        centralLayout->setSpacing(spacing);
+        ui->listWidget->setMaximumHeight(132);
+        ui->menuBar->setMaximumHeight(10000);
+        statusBar()->show();
     }
 
     isFullSize = !isFullSize;

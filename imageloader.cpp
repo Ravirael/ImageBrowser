@@ -6,24 +6,28 @@
 
 ImageLoader::ImageLoader(QObject *parent) :
     QObject(parent),
-    supportedExtensions{"*.jpg","*.jpeg","*.png","*.bmp"},
     prevCount(4),
-    postCount(8),
-    loadingQueue(observer)
+    postCount(8)
 {
+    setObjectName("Main ImageLoader");
     currentPixmap = pixmaps.begin();
     currentFile = files.begin();
 
-    qRegisterMetaType<std::shared_ptr<AsyncPixmapLoader>>("std::shared_ptr<AsyncPixmapLoader>");
-    connect(&observer, SIGNAL(loadingFinished(std::shared_ptr<AsyncPixmapLoader>)), this, SLOT(newPixmap(std::shared_ptr<AsyncPixmapLoader>)));
 
-    loadingThread = std::thread([&]{loadingQueue.performTasks();});
+    qRegisterMetaType<std::shared_ptr<AsyncPixmapLoader>>("std::shared_ptr<AsyncPixmapLoader>");
+    connect(&loadingQueue, SIGNAL(loadingFinished(std::shared_ptr<AsyncPixmapLoader>)),
+            this, SLOT(newPixmap(std::shared_ptr<AsyncPixmapLoader>)), Qt::QueuedConnection);
+
+    loadingQueue.start();
+    //loadingThread = std::thread(&ImageLoadingQueue::performTasks, &loadingQueue);
 }
 
 ImageLoader::~ImageLoader()
 {
     loadingQueue.stopTasks();
-    loadingThread.join();
+    loadingQueue.quit();
+    loadingQueue.wait();
+    //loadingThread.join();
 }
 
 const std::vector<QFileInfo> &ImageLoader::getFiles() const
@@ -72,27 +76,6 @@ void ImageLoader::prev()
     updateQueue();
 }
 
-void ImageLoader::setDir(QDir dir)
-{
-    dir.setSorting(QDir::Name);
-
-    QDirIterator it(dir.absolutePath(), supportedExtensions, QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
-
-    files.clear();
-
-    for (it.next(); it.hasNext(); it.next())
-    {
-        files.push_back(it.fileInfo());
-    }
-
-    currentFile = files.begin();
-
-    fillQueue();
-
-
-    emit itemChanged(0);
-
-}
 
 void ImageLoader::setFiles(std::vector<QFileInfo> newFiles)
 {

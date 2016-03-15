@@ -21,10 +21,13 @@ QPixmap AsyncPixmapLoader::getPixmap()
 {
     if (ready)
     {
-        return pixmap;
+        if (pixmap.isNull())
+        {
+            pixmap = QPixmap::fromImage(std::move(image));
+        }
     }
 
-    return QPixmap();
+    return pixmap;
 }
 
 
@@ -70,7 +73,7 @@ void AsyncPixmapLoader::operator()()
         }
     }
 
-    pixmap = QPixmap::fromImage(reader.read());
+    image = reader.read();
     ready = true;
 }
 
