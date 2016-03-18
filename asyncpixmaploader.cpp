@@ -3,7 +3,7 @@
 #include <QImageReader>
 
 AsyncPixmapLoader::AsyncPixmapLoader(QString path, QSize maxSize, QObject *parent, bool reloaded) :
-    QObject(parent), maxSize(maxSize), path(path), ready(false), reloaded(reloaded)
+    maxSize(maxSize), path(path), ready(false), reloaded(reloaded)
 {
 
 }

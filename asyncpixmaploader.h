@@ -6,10 +6,8 @@
 #include <memory>
 #include <atomic>
 
-class AsyncPixmapLoader : public QObject
+class AsyncPixmapLoader
 {
-    Q_OBJECT
-
     QSize maxSize;
     QString path;
     QImage image;
@@ -29,11 +27,7 @@ public:
 
     void operator()();
 
-signals:
-    //void pixmapReady(std::shared_ptr<QPixmap>);
-    //void loadingFinished(AsyncPixmapLoader *);
-
-public slots:
+public:
     void setSize(const QSize &size);
 };
 #endif //ASYNCPIXMAPLOADER_H
