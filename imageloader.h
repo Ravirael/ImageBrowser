@@ -52,20 +52,20 @@ signals:
     void itemChanged(int index);
 
 public slots:
-    void next();
-    void prev();
     void setFiles(std::vector<QFileInfo> files);
     void setSize(QSize size);
     void loadCurrentFullSize();
     void selectFile(int index);
-
+    void stopLoading();
 
 private slots:
     void newPixmap(std::shared_ptr<AsyncPixmapLoader> pixmap);
     void fillQueue();
     void updateQueue();
 
-    void switchElement(int direction);
+    void next();
+    void prev();
+    void switchElement(int distance);
 
 private:
     static QPixmap load(QString path);

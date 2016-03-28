@@ -1,4 +1,5 @@
 #include "ratingsystem.h"
+#include "iteratorhelper.h"
 
 RatingSystem::RatingSystem(QObject *parent) : QObject(parent)
 {
@@ -23,6 +24,30 @@ std::vector<QFileInfo> RatingSystem::getFiles(const std::set<RatingSystem::Ratin
     return onlyFiles;
 }
 
+std::vector<QFileInfo> RatingSystem::popFiles(const std::set<RatingSystem::Rating> &desiredRating)
+{
+
+    auto removed = getFiles(desiredRating);
+
+    for (auto it = files.begin(); it != files.end(); ++it)
+    {
+        if (desiredRating.count(it->second) != 0)
+        {
+            it = files.erase(it);
+
+            if (it != files.begin())
+            {
+                --it;
+            }
+        }
+    }
+
+    currentFile = files.begin();
+    emit filesChanged(getFiles());
+    emitChangeSignals();
+    return removed;
+}
+
 RatingSystem::Rating RatingSystem::ratingOf(int index) const
 {
     return std::next(files.begin(), index)->second;
@@ -44,13 +69,32 @@ void RatingSystem::setDir(QDir dir, QDirIterator::IteratorFlag flags)
         files.push_back({it.fileInfo(), Rating::Medium});
     }
 
-    std::sort(files.begin(), files.end(), [](const auto &f1, const auto &f2) -> bool {return f1.first.fileName() < f2.first.fileName();});
+    files.push_back({it.fileInfo(), Rating::Medium});
+
+
+    std::sort(files.begin(), files.end(),
+              [](const auto &f1, const auto &f2) -> bool {return f1.first.fileName() < f2.first.fileName();});
+
+    emit filesChanged(getFiles());
+    setActiveFile(0);
 }
 
 void RatingSystem::setActiveFile(int index)
 {
     currentFile = std::next(files.begin(), index);
-    emit ratingChanged(currentFile->second);
+    emitChangeSignals();
+}
+
+void RatingSystem::next()
+{
+    IteratorHelper::circularIncrement(currentFile, files);
+    emitChangeSignals();
+}
+
+void RatingSystem::prev()
+{
+    IteratorHelper::circularDecrement(currentFile, files);
+    emitChangeSignals();
 }
 
 void RatingSystem::incRating()
@@ -71,4 +115,10 @@ void RatingSystem::decRating()
         currentFile->second = (Rating)(--i);
         emit ratingChanged(currentFile->second);
     }
+}
+
+void RatingSystem::emitChangeSignals()
+{
+    emit fileChanged(std::distance(files.begin(), currentFile));
+    emit ratingChanged(currentFile->second);
 }

@@ -33,7 +33,7 @@ public:
 private slots:
     void on_actionOtw_rz_triggered();
     void iconLoaded(QIcon icon, QFileInfo *file);
-    void itemChanged(QListWidgetItem *, QListWidgetItem *);
+    void listWidgetItemChanged();
     void itemChanged(int index);
 
     void on_actionDeleteLow_triggered();

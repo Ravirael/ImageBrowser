@@ -45,7 +45,7 @@ IconLoader::~IconLoader()
     stopLoading();
 }
 
-void IconLoader::setFiles(const std::vector<QFileInfo> &files)
+void IconLoader::setFiles(std::vector<QFileInfo> files)
 {
     stopLoading();
     this->files = files;

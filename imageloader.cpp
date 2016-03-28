@@ -40,18 +40,10 @@ int ImageLoader::currentIndex() const
     return std::distance<std::vector<QFileInfo>::const_iterator>(files.begin(), currentFile);
 }
 
-void ImageLoader::switchElement(int direction)
+void ImageLoader::switchElement(int distance)
 {
-    IteratorHelper::circularAdvance(currentFile, files, direction);
-
-    emit itemChanged(std::distance(files.begin(), currentFile));
-
-    std::advance(currentPixmap, direction);
-
-    if ((*currentPixmap)->isLoaded())
-    {
-        emit imageChanged((*currentPixmap)->getPixmap(), false);
-    }
+    IteratorHelper::circularAdvance(currentFile, files, distance);
+    std::advance(currentPixmap, distance);
 }
 
 void ImageLoader::next()
@@ -62,7 +54,6 @@ void ImageLoader::next()
 
     pixmaps.pop_front();
     pixmaps.emplace_back(std::make_shared<AsyncPixmapLoader>(path, size, this));
-    updateQueue();
 }
 
 void ImageLoader::prev()
@@ -73,7 +64,6 @@ void ImageLoader::prev()
 
     pixmaps.pop_back();
     pixmaps.emplace_front(std::make_shared<AsyncPixmapLoader>(path, size, this));
-    updateQueue();
 }
 
 
@@ -91,8 +81,47 @@ void ImageLoader::setFiles(std::vector<QFileInfo> newFiles)
 
 void ImageLoader::selectFile(int index)
 {
-    currentFile = std::next(files.begin(), index);
-    fillQueue();
+    //TODO that's probably not the best way
+
+    unsigned distance = std::abs(index - currentIndex());
+    bool foreward = (index > currentIndex());
+
+    if (distance > (files.size() - distance))
+    {
+        distance = files.size() - distance;
+        foreward = !foreward;
+    }
+
+    for (unsigned i = 0; i < distance; ++i)
+    {
+        if (foreward)
+        {
+            next();
+        }
+        else
+        {
+            prev();
+        }
+    }
+    updateQueue();
+
+    if ((*currentPixmap)->isLoaded())
+    {
+        emit imageChanged((*currentPixmap)->getPixmap(), false);
+    }
+
+    emit itemChanged(std::distance(files.begin(), currentFile));
+
+}
+
+void ImageLoader::stopLoading()
+{
+    loadingQueue.clear();
+
+    while (!loadingQueue.isWaiting())
+    {
+        std::this_thread::yield();
+    }
 }
 
 void ImageLoader::setSize(QSize size)

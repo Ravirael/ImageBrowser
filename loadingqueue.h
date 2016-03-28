@@ -18,12 +18,13 @@ class LoadingQueue
     std::condition_variable cv;
 
     O observer;
-    std::atomic_bool stop;
+    std::atomic_bool stop, waiting;
 
 
 public:
     explicit LoadingQueue(O observer):observer(observer),
-                                       stop(false)
+                                       stop(false),
+                                       waiting(false)
     {
 
     }
@@ -39,7 +40,7 @@ public:
     {
         std::unique_lock<std::mutex> lock(tasksLock);
         tasksList.push_front(elem);
-        cv.notify_one();
+        cv.notify_one();        
     }
 
     void remove(T elem)
@@ -50,6 +51,11 @@ public:
     void clear()
     {
         withLock([&]{tasksList.clear();});
+    }
+
+    bool isWaiting() const
+    {
+        return waiting;
     }
 
     void stopTasks()
@@ -86,10 +92,12 @@ public:
             else
             {
                 std::unique_lock<std::mutex> lock(tasksLock);
+                waiting = true;
                 while (tasksList.empty() && !stop)
                 {
                     cv.wait(lock);
                 }
+                waiting = false;
             }
 
         }

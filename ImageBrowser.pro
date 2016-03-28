@@ -25,7 +25,8 @@ SOURCES += main.cpp\
     drawable.cpp \
     ratingsystem.cpp \
     ratingpainter.cpp \
-    imageloadingqueue.cpp
+    imageloadingqueue.cpp \
+    signalblocker.cpp
 
 HEADERS  += mainwindow.h \
     imagepainter.h \
@@ -41,7 +42,8 @@ HEADERS  += mainwindow.h \
     eventdependanti.h \
     ratingsystem.h \
     ratingpainter.h \
-    imageloadingqueue.h
+    imageloadingqueue.h \
+    signalblocker.h
 
 FORMS    += mainwindow.ui
 

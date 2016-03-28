@@ -25,12 +25,12 @@ public:
     explicit IconLoader(QObject *parent = 0);
     ~IconLoader();
 
-    void setFiles(const std::vector<QFileInfo> &files);
 
 signals:
     void iconLoaded(QIcon icon, QFileInfo *file);
 
 public slots:
+    void setFiles(std::vector<QFileInfo> files);
     void loadIconsAsync();
     void loadIcons();
     void stopLoading();

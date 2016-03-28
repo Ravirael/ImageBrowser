@@ -10,6 +10,7 @@
 #include <type_traits>
 
 #include "filelistwidgetitem.h"
+#include "signalblocker.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -26,10 +27,10 @@ MainWindow::MainWindow(QWidget *parent) :
             &painter, SLOT(setPixmap(QPixmap, bool)));
 
     connect(ui->actionNext, SIGNAL(triggered(bool)),
-            &loader, SLOT(next()));
+            &ratingSystem, SLOT(next()));
 
     connect(ui->actionPrev, SIGNAL(triggered(bool)),
-            &loader, SLOT(prev()));
+            &ratingSystem, SLOT(prev()));
 
     connect(&ratingSystem, SIGNAL(ratingChanged(RatingSystem::Rating)),
             &ratingPainter, SLOT(setRating(RatingSystem::Rating)));
@@ -39,13 +40,21 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->listWidget->setResizeMode(QListWidget::Adjust);
     ui->listWidget->setFlow(QListWidget::LeftToRight);
     ui->listWidget->setWrapping(false);
+    ui->listWidget->setMovement(QListWidget::Static);
 
-    connect(ui->listWidget, SIGNAL(currentItemChanged(QListWidgetItem*,QListWidgetItem*)),
-            this, SLOT(itemChanged(QListWidgetItem*,QListWidgetItem*)));
+    connect(ui->listWidget, SIGNAL(itemSelectionChanged()),
+            this, SLOT(listWidgetItemChanged()));
 
     connect(&iconLoader, SIGNAL(iconLoaded(QIcon, QFileInfo*)), this, SLOT(iconLoaded(QIcon, QFileInfo*)));
     connect(&painter, SIGNAL(sizeChanged(QSize)), &loader, SLOT(setSize(QSize)));
-    connect(&loader, SIGNAL(itemChanged(int)), this, SLOT(itemChanged(int)));
+    connect(&ratingSystem, SIGNAL(fileChanged(int)), this, SLOT(itemChanged(int)));
+    connect(&ratingSystem, SIGNAL(fileChanged(int)), &loader, SLOT(selectFile(int)));
+    connect(&ratingSystem, SIGNAL(filesChanged(std::vector<QFileInfo>)),
+            &loader, SLOT(setFiles(std::vector<QFileInfo>)));
+    connect(&ratingSystem, SIGNAL(filesChanged(std::vector<QFileInfo>)),
+            &iconLoader, SLOT(setFiles(std::vector<QFileInfo>)));
+
+
 
     connect(&painter, SIGNAL(zoomed()), &loader, SLOT(loadCurrentFullSize()));
 }
@@ -69,6 +78,11 @@ void MainWindow::on_actionOtw_rz_triggered()
 
     dialog.exec();
 
+    if (dialog.selectedFiles().empty())
+    {
+        return;
+    }
+
     openFile(dialog.selectedFiles().first());
 }
 
@@ -83,32 +97,31 @@ void MainWindow::iconLoaded(QIcon icon, QFileInfo *file)
         itemChanged(loader.currentIndex());
     }
 
-    float percentage = (ui->listWidget->count() * 100) / (float)ratingSystem.getFiles().size();
-    QString message;
-    message.sprintf("Ładowanie miniatur: %.2f%%", percentage);
+    QString message = QString("Ładowanie miniatur: %1/%2").
+            arg(ui->listWidget->count()).
+            arg(ratingSystem.getFiles().size());
 
-    if (percentage < 100.0f)
+    if (ui->listWidget->count() < ratingSystem.getFiles().size())
         ui->statusBar->showMessage(message);
     else
         ui->statusBar->showMessage("Ładowanie miniatur zakończone!", 2000);
 
 }
 
-void MainWindow::itemChanged(QListWidgetItem *, QListWidgetItem *)
+void MainWindow::listWidgetItemChanged()
 {
     int row = ui->listWidget->currentRow();
-    loader.selectFile(row);
+    ratingSystem.setActiveFile(row);
 }
+
 
 void MainWindow::itemChanged(int index)
 {
-    ui->listWidget->blockSignals(true);
+    SignalBlocker blocker(ui->listWidget);
     ui->listWidget->setCurrentRow(index);
-    ui->listWidget->blockSignals(false);
     ui->listWidget->scrollToItem(ui->listWidget->currentItem(),
                                  QAbstractItemView::PositionAtCenter);
 
-    ratingSystem.setActiveFile(index);
 }
 
 
@@ -117,53 +130,39 @@ void MainWindow::on_actionDeleteLow_triggered()
 {
     iconLoader.stopLoading();
 
-    loader.setFiles(ratingSystem.getFiles({RatingSystem::Medium, RatingSystem::Highest}));
-    iconLoader.setFiles(ratingSystem.getFiles({RatingSystem::Medium, RatingSystem::Highest}));
-
-    auto toDelete = ratingSystem.getFiles({RatingSystem::Lowest});
+    auto toDelete = ratingSystem.popFiles({RatingSystem::Lowest});
 
     for (auto &file : toDelete)
     {
         QFile::remove(file.filePath());
     }
 
-    ui->listWidget->blockSignals(true);
     ui->listWidget->clear();
 
     iconLoader.loadIconsAsync();
-
-    ui->listWidget->setCurrentRow(0);
-    ui->listWidget->blockSignals(false);
 }
 
 void MainWindow::on_actionMoveGood_triggered()
 {
-
-    loader.setFiles(ratingSystem.getFiles({RatingSystem::Medium, RatingSystem::Lowest}));
-    iconLoader.setFiles(ratingSystem.getFiles({RatingSystem::Medium, RatingSystem::Lowest}));
-
     QString dirPath = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
                   "",
-                 QFileDialog::ShowDirsOnly
-                 | QFileDialog::DontResolveSymlinks);
+                 QFileDialog::ShowDirsOnly);
 
     QDir dir(dirPath);
 
-    auto toMove = ratingSystem.getFiles({RatingSystem::Highest});
+    loader.stopLoading();
+
+    auto toMove = ratingSystem.popFiles({RatingSystem::Highest});
 
     for (auto &file : toMove)
     {
-        Q_ASSERT(QFile::rename(file.absoluteFilePath(), dir.absoluteFilePath(file.fileName())));
+        QFile f(file.absoluteFilePath());
+
+        Q_ASSERT(f.rename(dir.absoluteFilePath(file.fileName())));
     }
 
-    ui->listWidget->blockSignals(true);
     ui->listWidget->clear();
-
     iconLoader.loadIconsAsync();
-
-    ui->listWidget->setCurrentRow(0);
-    ui->listWidget->blockSignals(false);
-
 }
 
 void MainWindow::drawPixmapOnIcon(int row)
@@ -199,7 +198,8 @@ void MainWindow::on_actionDecRating_triggered()
 void MainWindow::openFile(const QString &path, QDirIterator::IteratorFlag flags)
 {
     QFileInfo file(path);
-    int index = 0;
+
+    ui->listWidget->clear();
 
     if (file.isDir())
     {
@@ -210,22 +210,17 @@ void MainWindow::openFile(const QString &path, QDirIterator::IteratorFlag flags)
         ratingSystem.setDir(file.dir(), flags);
     }
 
-    iconLoader.setFiles(ratingSystem.getFiles());
-    loader.setFiles(ratingSystem.getFiles());
+    //iconLoader.setFiles(ratingSystem.getFiles());
+    //loader.setFiles(ratingSystem.getFiles());
 
     if (file.isFile())
     {
         auto files = ratingSystem.getFiles();
-        index = std::distance(files.begin(), std::find(files.begin(), files.end(), file));
-        loader.selectFile(index);
+        int index = std::distance(files.begin(), std::find(files.begin(), files.end(), file));
+        ratingSystem.setActiveFile(index);
     }
 
-    ui->listWidget->blockSignals(true);
-    ui->listWidget->clear();
     iconLoader.loadIconsAsync();
-
-    ui->listWidget->setCurrentRow(index);
-    ui->listWidget->blockSignals(false);
 }
 
 void MainWindow::on_actionFullSize_triggered()
