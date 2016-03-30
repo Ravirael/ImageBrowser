@@ -53,8 +53,6 @@ RatingSystem::Rating RatingSystem::ratingOf(int index) const
     return std::next(files.begin(), index)->second;
 }
 
-
-
 void RatingSystem::setDir(QDir dir, QDirIterator::IteratorFlag flags)
 {
     QDirIterator it(dir.absolutePath(),

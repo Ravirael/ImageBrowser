@@ -14,7 +14,6 @@ class IconLoader : public QObject
 {
     Q_OBJECT
 
-    QImageReader reader;
     std::vector<QFileInfo> files;
     decltype(files.begin()) currentFile;
     std::atomic_bool stop;

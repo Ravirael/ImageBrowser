@@ -92,9 +92,9 @@ public:
             else
             {
                 std::unique_lock<std::mutex> lock(tasksLock);
-                waiting = true;
                 while (tasksList.empty() && !stop)
                 {
+                    waiting = true;
                     cv.wait(lock);
                 }
                 waiting = false;

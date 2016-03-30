@@ -129,12 +129,13 @@ void MainWindow::itemChanged(int index)
 void MainWindow::on_actionDeleteLow_triggered()
 {
     iconLoader.stopLoading();
+    loader.stopLoading();
 
     auto toDelete = ratingSystem.popFiles({RatingSystem::Lowest});
 
     for (auto &file : toDelete)
     {
-        QFile::remove(file.filePath());
+        Q_ASSERT(QFile::remove(file.filePath()));
     }
 
     ui->listWidget->clear();
@@ -150,6 +151,7 @@ void MainWindow::on_actionMoveGood_triggered()
 
     QDir dir(dirPath);
 
+    iconLoader.stopLoading();
     loader.stopLoading();
 
     auto toMove = ratingSystem.popFiles({RatingSystem::Highest});
@@ -157,7 +159,13 @@ void MainWindow::on_actionMoveGood_triggered()
     for (auto &file : toMove)
     {
         QFile f(file.absoluteFilePath());
-
+//        Q_ASSERT(!f.isOpen());
+//        Q_ASSERT(f.open(QFile::ReadWrite));
+//        Q_ASSERT(f.isOpen());
+//        Q_ASSERT(f.isReadable());
+//        Q_ASSERT(f.isWritable());
+//        f.close();
+//        Q_ASSERT(f.copy(dir.absoluteFilePath("A_"+file.fileName())));
         Q_ASSERT(f.rename(dir.absoluteFilePath(file.fileName())));
     }
 
@@ -209,9 +217,6 @@ void MainWindow::openFile(const QString &path, QDirIterator::IteratorFlag flags)
     {
         ratingSystem.setDir(file.dir(), flags);
     }
-
-    //iconLoader.setFiles(ratingSystem.getFiles());
-    //loader.setFiles(ratingSystem.getFiles());
 
     if (file.isFile())
     {

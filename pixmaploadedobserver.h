@@ -8,6 +8,7 @@
 class PixmapLoadedObserver : public QObject
 {
     Q_OBJECT
+
 public:
     explicit PixmapLoadedObserver(QObject *parent = 0);
 

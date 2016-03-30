@@ -122,6 +122,9 @@ void ImageLoader::stopLoading()
     {
         std::this_thread::yield();
     }
+
+    files.clear();
+    pixmaps.clear();
 }
 
 void ImageLoader::setSize(QSize size)

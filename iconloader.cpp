@@ -5,6 +5,9 @@
 
 void IconLoader::loadIcons()
 {
+    QImageReader reader;
+    reader.setQuality(0);
+
     for (auto currentFile = files.begin();
          (currentFile != files.end()) && (stop == false);
          ++currentFile)
@@ -33,11 +36,12 @@ void IconLoader::stopLoading()
     {
         loadingThread.join();
     }
+
+    files.clear();
 }
 
 IconLoader::IconLoader(QObject *parent) : QObject(parent), stop(true)
 {
-    reader.setQuality(0);
 }
 
 IconLoader::~IconLoader()
